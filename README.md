@@ -12,46 +12,27 @@ Once python and the requisite libraries are installed you can run the code.
 insert the following ball variables in order with spaces between them #( for now)
 x(in ft) y(in ft) z(in ft) vTot(mph) Theta(deg) Psi(deg) SpinRate(rpm) tilt(deg) gyro(deg)
 
-x is the location left of the 
+x is the location left of the pitcher
+y is the position from the rubber
+z is the height of the ball
+vTot is the ball speed
+Theta is the ball's launch angle above horizontal
+Psi is the heading angle in degrees right of pitcher
+SpinRate is spin rate of ball
+Tilt is the degrees of tilt on the clock face (i.e. 0 deg = 12:00 Tilt, 90 deg = 3:00, -90 deg = 9:00 Tilt, etc)
+Gyro is the degrees away from the y direction
 
-Give the example
-And repeat
+Two additional angles are asked for,. They are the angles from the spin axis to the ball logo.(not yet used)
 
-until finished
-End with an example of getting some data out of the system or using it for a little demo
-
-Running the tests
-Explain how to run the automated tests for this system
-
-Break down into end to end tests
-Explain what these tests test and why
-
-Give an example
-And coding style tests
-Explain what these tests test and why
-
-Give an example
-Deployment
-Add additional notes about how to deploy this on a live system
-
-Built With
-Dropwizard - The web framework used
-Maven - Dependency Management
-ROME - Used to generate RSS Feeds
-Contributing
-Please read CONTRIBUTING.md for details on our code of conduct, and the process for submitting pull requests to us.
+This is built to enable pitchers, pitching coaches, or analysts gain a better understanding of ball flight behaviour and is built to be ever more accurate as better models and results become available
 
 Versioning
 We use SemVer for versioning. For the versions available, see the tags on this repository.
 
 Authors
-Billie Thompson - Initial work - PurpleBooth
-See also the list of contributors who participated in this project.
-
-License
-This project is licensed under the MIT License - see the LICENSE.md file for details
+Andrew Smith - Seam Effect modeling and Initial work - USU EFDL
+Michael Ressler - GitHub expertise -Diamond Kinetics(?)
 
 Acknowledgments
-Hat tip to anyone whose code was used
-Inspiration
+Thanks to Barton Smith for enabling this work to get started, Alan Nathan for access to the excel file and answers to question and everyone else
 etc
