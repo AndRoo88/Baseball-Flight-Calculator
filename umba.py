@@ -4,7 +4,138 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D 
 
 
-def PitchedBallTraj():
+def main():
+    
+    i = 0
+    repeat = True
+    x = []
+    y = []
+    z = []
+    Vtot = []
+    Theta = []
+    Psi = []
+    SpinRate = []
+    Tilt = []
+    Gyro = []
+    angle1 = []
+    angle2 = []
+    
+    pX = []
+    pY = []
+    pZ = []
+    IX = []
+    IY = []
+    IZ = []
+    DX = []
+    DY = []
+    DZ = []
+    FX = []
+    FY = []
+    FZ = []
+    
+    while repeat == True:
+        
+        print('enter the following values:')
+        print('x y z V ele dir SpinRate Tilt Gyro angle1 angle2')
+        (x,y,z,Vtot,Theta,Psi,SpinRate,Tilt,Gyro,angle1,angle2) = [float(x) for x in input().split()]    
+        positions = (PitchedBallTraj(x,y,z,Vtot,Theta,Psi,SpinRate,Tilt,Gyro,0,0))
+        Plotting(positions)
+        
+        pX.append(positions[0])
+        pY.append(positions[1])
+        pZ.append(positions[2])
+        IX.append(positions[3])
+        IY.append(positions[4])
+        IZ.append(positions[5])
+        DX.append(positions[6])
+        DY.append(positions[7])
+        DZ.append(positions[8])
+        FX.append(positions[9])
+        FY.append(positions[10])
+        FZ.append(positions[11])
+        
+        Again = input("Would you like to look at another pitch?\n")
+        if Again == 'y' or Again == 'yes' or Again == 'Y' or Again == 'YES' or Again == 'Yes':
+            repeat = True
+        else:
+            repeat = False
+    
+    for j in range(i):
+        plt.figure(4,figsize=(3,10))
+        plt.xlabel('x (in)')
+        plt.ylabel('y (ft)')
+        plt.title('Bird\'s Eye View')
+        plt.ylim(0,max(pY[j]) + 2.5)
+        plt.plot(pX[j],pY[j])
+        plt.scatter(IX[j]*12,IY[j], s=100, c = 'g')
+        plt.scatter(DX[j]*12,DY[j], s=100, c = 'y')
+        plt.scatter(FX[j]*12,FY[j], s=100, c = 'r')
+        plt.savefig("BirdsEye.jpg")
+        
+        plt.figure(5, figsize=(3,6))
+        plt.xlabel('x (in)')
+        plt.ylabel('z (in)')
+        plt.title('Catcher\'s Perspective')
+        plt.ylim(0,max(pZ[j]) + 4)
+        plt.plot(pX[j],pZ[j])
+        plt.scatter(IX[j]*12,IZ[j]*12, s=100, c = 'g')
+        plt.scatter(DX[j]*12,DZ[j]*12, s=100, c = 'y')
+        plt.scatter(FX[j]*12,FZ[j]*12, s=100, c = 'r')
+        plt.savefig("Catcher.jpg")
+        
+        plt.figure(6,figsize=(10,3))
+        plt.xlabel('y (ft)')
+        plt.ylabel('z (in)')
+        plt.title('Side View')
+        plt.xlim(0,62.5)
+        plt.ylim(0,max(pZ[j]) + 9)
+        plt.plot(pY[j],pZ[j])
+        plt.scatter(IY[j],IZ[j]*12, s=100, c = 'g')
+        plt.scatter(DY[j],DZ[j]*12, s=100, c = 'y')
+        plt.scatter(FY[j],FZ[j]*12, s=100, c = 'r')
+    #    plt.show()
+        plt.savefig("Side.jpg")
+    
+
+def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2):
+    """
+    This function is designed merely to generate the balls initial conditions
+    It will take various options and output x0,y0,z0,u0,v0,w0,Spinx0,\
+    Spiny0,Spinz0,angle1,angle2 angle 1 and angle 2 are for seam effects
+    """
+    
+    Theta = Theta*np.pi/180
+    Psi = Psi*np.pi/180
+    
+    uvmag = Vtot*np.cos(Theta)
+    w0 = Vtot*np.sin(Theta)
+
+    u0 = -uvmag*np.sin(Psi)
+    v0 = uvmag*np.cos(Psi)
+    
+    Tilt = Tilt*np.pi/180 # rad tilt
+    Gyro = Gyro*np.pi/180 # rad gyro
+    Spinxz = SpinRate*np.cos(Tilt)
+    
+    Spinx0 = SpinRate*np.sin(Tilt)
+    Spiny0 = Spinxz*np.sin(Gyro)
+    Spinz0 = Spinxz*np.cos(Gyro)
+    angle1 = 0
+    angle2 = 0
+    
+    
+    print('\nu:',u0,'\nv:',v0,'\nw:',w0)
+    print('\nSpinx0:',Spinx0,'\nSpiny0:',Spiny0,'\nSpinz0:',Spinz0)
+    
+    
+    
+    FullState = [u0,v0,w0,Spinx0,Spiny0,Spinz0,angle1,angle2]
+    
+    
+    
+    return FullState
+
+def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2):
     
     """
         Primay inputs are: initial position, x0, y0, and z0 with origin at the
@@ -21,46 +152,21 @@ def PitchedBallTraj():
     """
     
 ###############################################################################  
+
+    FullState = anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, 0,0)
+#    print(FullState)
     
-    #your main input are these
-    x0 = -1.0 #ft
-    y0 = 55. #ft
-    z0 = 6. #ft
-    
-    u0 = 1.500 #mph to the pitcher's left 
-    v0 = 70 #mph from pitcher to cathcer
-    w0 = 2.500 #mph Vertical up
-    
-    Spinx0 = 2000. #rpm a negative implies back spin for a typical fastball, positive for curve ball
-    Spiny0 = 500.0 #gyro spin (like a bullet)
-    Spinz0 = 000.000 # side spin (positive values create a right handed slider)
-###############################################################################   
-    
-###############################################################################
-#        
-#    vi = 100 #total velocity of the pitch at release
-#    LaunchAngle = -30.0 #deg launch angle above horizon
-#    HeadingAngle = 0.0 # 180 is straight at home plate over 180 is to the pitcher's right
-#    
-#    uv = vi*np.cos(LaunchAngle)
-#    
-#    u0 = uv*np.sin(HeadingAngle)
-#    v0 = uv*np.cos(HeadingAngle)
-#    w0 = vi*np.sin(LaunchAngle)
-#    
-#    Spinx0 = 0 #rpm a negative implies back spin for a typical fastball positive for curve ball
-#    Spiny0 = .01 #gyro spin (like a bullet)
-#    Spinz0 = 0 # side spin (positive values create a right handed slider)
-############################################################################### 
-    
-    #your main input are these
-###############################################################################    
-#    u0 = float(input('velocity to pitche\'s left at release (mph)'))
-#    v0 = float(input('velocity towards catcher at release (mph)'))
-#    w0 = float(input(' at release (mph)'))
-#    Spinx0 = float(input('back spin at release (rpm)'))
-#    Spiny0 = float(input('gyro at release (rpm)'))
-#    Spinz0 = float(input('side spin at release (rpm)'))
+    x0 = x
+    y0 = y
+    z0 = z
+    u0 = FullState[0]
+    v0 = FullState[1]
+    w0 = FullState[2]
+    Spinx0 = FullState[3]
+    Spiny0 = FullState[4]
+    Spinz0 = FullState[5]
+    angle1 = FullState[6]
+    angle2 = FullState[7]
 ###############################################################################
     # All air properties are the approximate averages for sea level over the season 
 #    rhoDRY = 0.0765 #lb/ft^3
@@ -131,6 +237,8 @@ def PitchedBallTraj():
         zP.append(BallState1[2]*12)
         
     BallStateF = BallState1
+    xF, yF, zF = BallStateF[0], BallStateF[1], BallStateF[2]
+    fileBT.close()
     
     dzNoSpin = w0*t - (32.2/2)*t*t
     zfg = z0 + dzNoSpin
@@ -148,7 +256,6 @@ def PitchedBallTraj():
     
     totalRotations = SpinRateF/(2*np.pi) #assumes no spin decay
     
-    finaltotalspeed = np.sqrt(BallStateF[3]**2 + BallStateF[4]**2 + BallStateF[5]**2)/1.467
     finalApproachAngleyz = np.arctan2(abs(BallStateF[5]), abs(BallStateF[4]))
     finalApproachAnglexy = np.arctan2(abs(BallStateF[3]), abs(BallStateF[4]))
     
@@ -167,38 +274,62 @@ def PitchedBallTraj():
     print('Total Spin Rate (rpm)----------------- ', to_precision(SpinRate0/0.104719754,4))
     print('Initial Efficiency (%)---------------- ', to_precision(SpinEfficiency0*100,4))
     
-    print(f'\n\nconditions at decision point:')
-    print(f'x at decision point (ft)------------- ', to_precision(xD,4))
-    print(f'y at decision point (ft)------------- ', to_precision(yD,4))
-    print(f'z at decision point (ft)--------------', to_precision(zD,4))
-    print(f'u at decision point (ft)--------------', to_precision(uD,4))
-    print(f'v at decision point (ft)--------------', to_precision(vD,4))
-    print(f'w at decision point (ft)--------------', to_precision(wD,4))
+    print('\n\nconditions at decision point:')
+    print('x at decision point (ft)------------- ', to_precision(xD,4))
+    print('y at decision point (ft)------------- ', to_precision(yD,4))
+    print('z at decision point (ft)--------------', to_precision(zD,4))
+    print('u at decision point (ft)--------------', to_precision(uD,4))
+    print('v at decision point (ft)--------------', to_precision(vD,4))
+    print('w at decision point (ft)--------------', to_precision(wD,4))
     
     print('\n\nconditions across the plate:')
-    print(f'xf (ft)-------------------------------', to_precision(BallStateF[0],4))
-    print(f'yf (ft)-------------------------------', to_precision(BallStateF[1],4)) # actually just the last point data was taken
-    print(f'zf (ft)-------------------------------', to_precision(BallStateF[2],4))
-    print(f'uf (mph)------------------------------', to_precision(BallStateF[3]/1.467,4))
-    print(f'vf (mph)------------------------------', to_precision(-BallStateF[4]/1.467,4))
-    print(f'wf (mph)------------------------------', to_precision(BallStateF[5]/1.467,4))
-    print(f'Total Velocity (mph)------------------', to_precision(VelTotF/1.467,4))
-    print(f'Spinxf (rpm)--------------------------', to_precision(BallStateF[6]/0.104719754,4))
-    print(f'Spinyf (rpm)--------------------------', to_precision( BallStateF[7]/0.104719754,4))
-    print(f'Spinzf (rpm)--------------------------', to_precision(BallStateF[8]/0.104719754,4))
-    print(f'Total Spin Rate (rpm)-----------------', to_precision(SpinRateF/0.104719754,4))
-    print(f'Approach Angle (yz, deg)--------------', to_precision(finalApproachAngleyz*180/np.pi,4))
-    print(f'Approach Angle (xy, deg)--------------', to_precision(finalApproachAnglexy*180/np.pi,4))
-    print(f'Final Efficiency (%)------------------', to_precision(SpinEfficiencyF*100,4))
-    print(f'dx after decision point (ft)----------', to_precision((BallStateF[0] - xD)/12,4))
-    print(f'dy after decision point (ft)----------', to_precision((BallStateF[1] - yD)/12,4))
-    print(f'dz after decision point (ft)----------', to_precision((BallStateF[2] - zD)/12,4))
+    print('xf (ft)-------------------------------', to_precision(BallStateF[0],4))
+    print('yf (ft)-------------------------------', to_precision(BallStateF[1],4)) # actually just the last point data was taken
+    print('zf (ft)-------------------------------', to_precision(BallStateF[2],4))
+    print('uf (mph)------------------------------', to_precision(BallStateF[3]/1.467,4))
+    print('vf (mph)------------------------------', to_precision(-BallStateF[4]/1.467,4))
+    print('wf (mph)------------------------------', to_precision(BallStateF[5]/1.467,4))
+    print('Total Velocity (mph)------------------', to_precision(VelTotF/1.467,4))
+    print('Spinxf (rpm)--------------------------', to_precision(BallStateF[6]/0.104719754,4))
+    print('Spinyf (rpm)--------------------------', to_precision( BallStateF[7]/0.104719754,4))
+    print('Spinzf (rpm)--------------------------', to_precision(BallStateF[8]/0.104719754,4))
+    print('Total Spin Rate (rpm)-----------------', to_precision(SpinRateF/0.104719754,4))
+    print('Approach Angle (yz, deg)--------------', to_precision(finalApproachAngleyz*180/np.pi,4))
+    print('Approach Angle (xy, deg)--------------', to_precision(finalApproachAnglexy*180/np.pi,4))
+    print('Final Efficiency (%)------------------', to_precision(SpinEfficiencyF*100,4))
+    print('dx after decision point (ft)----------', to_precision((BallStateF[0] - xD)/12,4))
+    print('dy after decision point (ft)----------', to_precision((BallStateF[1] - yD)/12,4))
+    print('dz after decision point (ft)----------', to_precision((BallStateF[2] - zD)/12,4))
     
     print('\n\nTotals:')
-    print(f'flight time (t)-----------------------', to_precision(t,4))
-    print(f'Vertical break (in)-------------------', to_precision(vBreak*12,4))
-    print(f'Horizontal break (in)-----------------', to_precision(hBreak*12,4))
-    print(f'Number of Revolutions-----------------', to_precision(totalRotations*t,4))
+    print('flight time (t)-----------------------', to_precision(t,4))
+    print('Vertical break (in)-------------------', to_precision(vBreak*12,4))
+    print('Horizontal break (in)-----------------', to_precision(hBreak*12,4))
+    print('Number of Revolutions-----------------', to_precision(totalRotations*t,4))
+    
+    positions = [xP,yP,zP,x0,y0,z0,xD,yD,zD,xF,yF,zF]
+    
+    return positions
+
+def Plotting(positions):
+    
+    """
+    xP, yP, and zP are the arrays that contain all the velocity positions. x0,
+    xD, and xF are the beginning, decision point, and last x poisitions of the 
+    ball. Same for Y and Z
+    """
+    xP = positions[0]
+    yP = positions[1]
+    zP = positions[2]
+    x0 = positions[3]
+    y0 = positions[4]
+    z0 = positions[5]
+    xD = positions[6]
+    yD = positions[7]
+    zD = positions[8]
+    xF = positions[9]
+    yF = positions[10]
+    zF = positions[11]
     
     plt.figure(1,figsize=(3,10))
     plt.xlabel('x (in)')
@@ -208,8 +339,9 @@ def PitchedBallTraj():
     plt.plot(xP,yP)
     plt.scatter(x0*12,y0, s=100, c = 'g')
     plt.scatter(xD*12,yD, s=100, c = 'y')
-    plt.scatter(BallStateF[0]*12,BallStateF[1], s=100, c = 'r')
-    plt.savefig("BirdsEye.jpg")
+    plt.scatter(xF*12,yF, s=100, c = 'r')
+#    hold on
+    plt.show()
     
     plt.figure(2, figsize=(3,6))
     plt.xlabel('x (in)')
@@ -221,8 +353,8 @@ def PitchedBallTraj():
     plt.plot(xP,zP)
     plt.scatter(x0*12,z0*12, s=100, c = 'g')
     plt.scatter(xD*12,zD*12, s=100, c = 'y')
-    plt.scatter(BallStateF[0]*12,BallStateF[2]*12, s=100, c = 'r')
-    plt.savefig("Catcher.jpg")
+    plt.scatter(xF*12,zF*12, s=100, c = 'r')
+    plt.show()
     
     plt.figure(3,figsize=(10,3))
     plt.xlabel('y (ft)')
@@ -233,12 +365,63 @@ def PitchedBallTraj():
     plt.plot(yP,zP)
     plt.scatter(y0,z0*12, s=100, c = 'g')
     plt.scatter(yD,zD*12, s=100, c = 'y')
-    plt.scatter(BallStateF[1],BallStateF[2]*12, s=100, c = 'r')
+    plt.scatter(yF,zF*12, s=100, c = 'r')
+    plt.show()
+    
+def PlottingII(positions):
+    
+    
+    xP = positions[0]
+    yP = positions[1]
+    zP = positions[2]
+    x0 = positions[3]
+    y0 = positions[4]
+    z0 = positions[5]
+    xD = positions[6]
+    yD = positions[7]
+    zD = positions[8]
+    xF = positions[9]
+    yF = positions[10]
+    zF = positions[11]
+    
+    plt.figure(4,figsize=(3,10))
+    plt.xlabel('x (in)')
+    plt.ylabel('y (ft)')
+    plt.title('Bird\'s Eye View')
+    plt.ylim(0,max(yP) +2.5)
+    plt.plot(xP,yP)
+    plt.scatter(x0*12,y0, s=100, c = 'g')
+    plt.scatter(xD*12,yD, s=100, c = 'y')
+    plt.scatter(xF*12,yF, s=100, c = 'r')
+#    plt.show()
+    plt.savefig("BirdsEye.jpg")
+    
+    plt.figure(5, figsize=(3,6))
+    plt.xlabel('x (in)')
+    plt.ylabel('z (in)')
+    plt.title('Catcher\'s Perspective')
+    plt.plot(x0,z0,'g')
+#    plt.xlim(-17., 17.)
+    plt.ylim(0,max(zP) + 4)
+    plt.plot(xP,zP)
+    plt.scatter(x0*12,z0*12, s=100, c = 'g')
+    plt.scatter(xD*12,zD*12, s=100, c = 'y')
+    plt.scatter(xF*12,zF*12, s=100, c = 'r')
+#    plt.show()
+    plt.savefig("Catcher.jpg")
+    
+    plt.figure(6,figsize=(10,3))
+    plt.xlabel('y (ft)')
+    plt.ylabel('z (in)')
+    plt.title('Side View')
+    plt.xlim(0,62.5)
+    plt.ylim(0,max(zP) + 9)
+    plt.plot(yP,zP)
+    plt.scatter(y0,z0*12, s=100, c = 'g')
+    plt.scatter(yD,zD*12, s=100, c = 'y')
+    plt.scatter(yF,zF*12, s=100, c = 'r')
+#    plt.show()
     plt.savefig("Side.jpg")
-    
-    fileBT.close()
-    
-    return BallStateF
     
     
 def derivs(t, BallState, BallConsts):
@@ -398,4 +581,5 @@ def RK4(t0,y0,dt,BallConsts):
     
     return y
 
-PitchedBallTraj()
+
+main()
