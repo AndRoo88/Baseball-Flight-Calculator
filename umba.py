@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 
 def main():
         
-    print("by way of explanation: This ball trajectory calculator is based on\
-a no wind at sea level with about 60% humidity. The ambient\
-conditions are taken as constants for this code but they can be altered \
+    print("This baseball trajectory calculator models \
+still air at sea level with about 60% humidity.\nThe ambient\
+conditions are fixed can be adjusted in the code \
 if needed or made into variable at a later time.\n\
-\nAll initial ball state variables have default values that approximately\
-represent a 90 mph ball with no spin.\nthe release point is only asked once\
-and remains the same while the code is running. all other variables\
-can be changed for comparison.")
+\nAll initial ball state variables have default values that approximate\
+ a 90 mph ball with no spin.\nThe release point is only asked once\
+and remains the same for subsequent pitches.\n All other variables\
+can be changed for comparison. To retain the current value, just press return")
     
     
     pX = []
