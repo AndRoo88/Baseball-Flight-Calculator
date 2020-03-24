@@ -6,8 +6,15 @@ import matplotlib.pyplot as plt
 
 def main():
         
-    i = 0
-    repeat = True
+    print("by way of explanation: This ball trajectory calculator is based on\
+a no wind at sea level with about 60% humidity. The ambient\
+conditions are taken as constants for this code but they can be altered \
+if needed or made into variable at a later time.\n\
+\nAll initial ball state variables have default values that approximately\
+represent a 90 mph ball with no spin.\nthe release point is only asked once\
+and remains the same while the code is running. all other variables\
+can be changed for comparison.")
+    
     
     pX = []
     pY = []
@@ -22,10 +29,10 @@ def main():
     FY = []
     FZ = []
     
-    
-    x = float(input('distance left from center of rubber of ball at release: '))
-    y = float(input('distance forward from center of rubber of ball at release: '))
-    z = float(input('height of ball from field height at release: '))      
+    #x y and z here are typical of an approximately 6' tall rhp
+    x = -1
+    y = 5.5
+    z = 6
     Vtot = 90
     Theta = 0
     Psi = 0
@@ -33,50 +40,78 @@ def main():
     TiltH = 0
     Tiltm = 0
     SpinE = 100
-    
-    while repeat == True:
-        
-#        if i == 0:
-#            #initial pitch details can be whater you want but defualt is 90 ball with no spin
-#            #                                                                   x  y  z  Vtot elev Head   Spin  Tilt(hrs) (mins) Gyro(deg)   a1 a2
-#            (x,y,z,Vtot,Theta,Psi,SpinRate,TiltH, Tiltm,Gyro,angle1,angle2) = (0, 5, 6, 90,    0,   0,     0.001,    0,        0,    0,         0, 0)  
-#            Tilt = TimeToTilt(TiltH, Tiltm)
-##            Gyro = np.arcsin(GyroE/100)
-#        else:
-#            (x,y,z,Vtot,Theta,Psi,SpinRate,TiltH, Tiltm,Gyro,angle1,angle2) = [float(x) for x in input('x y z V ele dir SpinRate Tilt(hrs) (min) Gyro angle1 angle2\n').split()] 
-#            Tilt = TimeToTilt(TiltH, Tiltm)
-#            Gyro = np.arcsin(GyroE/100)
             
+    print('\n\n\ncurent release distance left to right is', x)
+    Qx = (input('distance left from center of rubber (right haded pitchers should have negative numbers) (ft): '))
+    if Qx == "":
+        x = x
+    else:
+        x = float(x)
+        
+    print('\n\n\ncurent release distance from rubber', y)
+    Qy = (input('release distance from rubber (should be approximatly the stride lenght)(ft): '))
+    if Qy == "":
+        y = y
+    else:
+        y = float(Qy)
+        
+    print('\n\n\ncurent release height is', z)
+    Qz = (input('height of ball from field at release (ft): '))
+    if Qz == "":
+        z = z
+    else:
+        z = float(Qz)
+        
+    i = 0
+    repeat = True
+    while repeat == True:
+            
+        if i == 0:
+            print('\n\nIf you want to keep the previous value simply hit return.')
+        print('')
+        print("Current initial speed set to ",Vtot)
         QVtot = (input('what is the ball\'s total initial speed (mph): '))
         if QVtot == "":
             Vtot = Vtot
         else:
             Vtot = float(QVtot)
+            
+        print("Current initial upward angle set to ",Theta)
         QTheta = (input('what is the ball\'s initial upwards angle (deg): '))
         if QTheta == "":
             Theta = Theta
         else:
             Theta = float(QTheta)
+            
+        print("Current initial direction angle set to ", Psi)
         QPsi = (input('what is the ball\'s  initial direction angle(deg): '))
         if QPsi == "":
             Psi = Psi
         else:
             Psi = float(QPsi)
+            
+        print("Current initial Spin Rate set to ", SpinRate)
         QSpinRate = (input('what is the ball\'s initial spin rate (rpm): '))
         if QSpinRate == "":
             SpinRate = SpinRate
         else:
             SpinRate = float(QSpinRate)
+            
+        print("Current initial tilt hours set to ", TiltH)
         QTiltH = (input('what is the ball\'s initial hours tilt (hrs): '))
         if QTiltH == "":
             TiltH = TiltH
         else:
             TiltH = float(QTiltH)
+            
+        print("Current initial tilt minutes set to ", Tiltm)
         QTiltm = (input('what is the ball\'s initial minutes tilt (mins): '))
         if QTiltm == "":
             Tiltm = Tiltm
         else:
             Tiltm = float(QTiltm)
+            
+        print("Current initial spin efficiency set to ", SpinE)
         QSpinE = (input('what is the ball\'s initial spin efficiency (%): '))
         if QSpinE == "":
             SpinE = SpinE
@@ -85,8 +120,18 @@ def main():
         if SpinE == 100:
             Gyro = 0
         else:
-            print('if',TiltH + 3,':',Tiltm,'is forward enter " r "\n \
-                              if',TiltH - 3,':',Tiltm,'is forward enter " l "')
+            TiltHnewUp = TiltH + 3
+            if TiltHnewUp > 12:
+                TiltHnewUp = int(TiltHnewUp - 12)
+            else:
+                TiltHnewUp = int(TiltHnewUp)
+            TiltHnewDn = TiltH - 3
+            if TiltHnewDn < 1:
+                TiltHnewDn = int(TiltHnewDn + 12)
+            else:
+                TiltHnewDn = int(TiltHnewDn)
+            print('if',TiltHnewUp,':',Tiltm,'is forward enter " r "\n \
+                              if', TiltHnewDn,':',int(Tiltm),'is forward enter " l "')
             leftRightGyro = input()
             if leftRightGyro == 'l':
                 Gyro = np.arcsin(SpinE/100)
@@ -219,7 +264,8 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     Spiny0 = Spiny0 * -.104719754
     Spinz0 = Spinz0 * .104719754
     
-    decisionPoint = 0.2 #sec
+    decisionPoint = 0.2 #sec #time before ball arrives when batter has 
+                        #to decide to hit or not.
     
     SpinVec = [Spinx0,Spiny0,Spinz0]
     Vel = [u0,v0,w0]
@@ -240,6 +286,9 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     xP = []
     yP = []
     zP = []
+    uP = []
+    vP = []
+    wP = []
     xD = BallState0[0]
     yD = BallState0[1]
     zD = BallState0[2]
@@ -268,7 +317,19 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
         xP.append(BallState1[0]*12)
         yP.append(BallState1[1])
         zP.append(BallState1[2]*12)
+        uP.append(BallState1[3])
+        vP.append(BallState1[4])
+        wP.append(BallState1[5])
         
+    
+
+    xD = xP[int(.2/dt)]/12
+    yD = yP[int(.2/dt)]
+    zD = zP[int(.2/dt)]/12
+    uD = uP[int(.2/dt)]
+    vD = vP[int(.2/dt)]
+    wD = wP[int(.2/dt)]
+    
     BallStateF = BallState1
     xF, yF, zF = BallStateF[0], BallStateF[1], BallStateF[2]
     fileBT.close()
