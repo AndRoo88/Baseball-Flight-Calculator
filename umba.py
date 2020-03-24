@@ -1,24 +1,13 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D 
+#from mpl_toolkits.mplot3d import Axes3D 
 
 
 def main():
-    
+        
     i = 0
     repeat = True
-    x = []
-    y = []
-    z = []
-    Vtot = []
-    Theta = []
-    Psi = []
-    SpinRate = []
-    Tilt = []
-    Gyro = []
-    angle1 = []
-    angle2 = []
     
     pX = []
     pY = []
@@ -33,11 +22,79 @@ def main():
     FY = []
     FZ = []
     
+    
+    x = float(input('distance left from center of rubber of ball at release: '))
+    y = float(input('distance forward from center of rubber of ball at release: '))
+    z = float(input('height of ball from field height at release: '))      
+    Vtot = 90
+    Theta = 0
+    Psi = 0
+    SpinRate = 0.001
+    TiltH = 0
+    Tiltm = 0
+    SpinE = 100
+    
     while repeat == True:
         
-        print('enter the following values:')
-        print('x y z V ele dir SpinRate Tilt Gyro angle1 angle2')
-        (x,y,z,Vtot,Theta,Psi,SpinRate,Tilt,Gyro,angle1,angle2) = [float(x) for x in input().split()]    
+#        if i == 0:
+#            #initial pitch details can be whater you want but defualt is 90 ball with no spin
+#            #                                                                   x  y  z  Vtot elev Head   Spin  Tilt(hrs) (mins) Gyro(deg)   a1 a2
+#            (x,y,z,Vtot,Theta,Psi,SpinRate,TiltH, Tiltm,Gyro,angle1,angle2) = (0, 5, 6, 90,    0,   0,     0.001,    0,        0,    0,         0, 0)  
+#            Tilt = TimeToTilt(TiltH, Tiltm)
+##            Gyro = np.arcsin(GyroE/100)
+#        else:
+#            (x,y,z,Vtot,Theta,Psi,SpinRate,TiltH, Tiltm,Gyro,angle1,angle2) = [float(x) for x in input('x y z V ele dir SpinRate Tilt(hrs) (min) Gyro angle1 angle2\n').split()] 
+#            Tilt = TimeToTilt(TiltH, Tiltm)
+#            Gyro = np.arcsin(GyroE/100)
+            
+        QVtot = (input('what is the ball\'s total initial speed (mph): '))
+        if QVtot == "":
+            Vtot = Vtot
+        else:
+            Vtot = float(QVtot)
+        QTheta = (input('what is the ball\'s initial upwards angle (deg): '))
+        if QTheta == "":
+            Theta = Theta
+        else:
+            Theta = float(QTheta)
+        QPsi = (input('what is the ball\'s  initial direction angle(deg): '))
+        if QPsi == "":
+            Psi = Psi
+        else:
+            Psi = float(QPsi)
+        QSpinRate = (input('what is the ball\'s initial spin rate (rpm): '))
+        if QSpinRate == "":
+            SpinRate = SpinRate
+        else:
+            SpinRate = float(QSpinRate)
+        QTiltH = (input('what is the ball\'s initial hours tilt (hrs): '))
+        if QTiltH == "":
+            TiltH = TiltH
+        else:
+            TiltH = float(QTiltH)
+        QTiltm = (input('what is the ball\'s initial minutes tilt (mins): '))
+        if QTiltm == "":
+            Tiltm = Tiltm
+        else:
+            Tiltm = float(QTiltm)
+        QSpinE = (input('what is the ball\'s initial spin efficiency (%): '))
+        if QSpinE == "":
+            SpinE = SpinE
+        else:
+            SpinE = float(QSpinE)
+        if SpinE == 100:
+            Gyro = 0
+        else:
+            print('if',TiltH + 3,':',Tiltm,'is forward enter " r "\n \
+                              if',TiltH - 3,':',Tiltm,'is forward enter " l "')
+            leftRightGyro = input()
+            if leftRightGyro == 'l':
+                Gyro = np.arcsin(SpinE/100)
+            elif leftRightGyro == 'r':
+                Gyro = -np.arcsin(SpinE/100)
+        
+        Tilt = TimeToTilt(TiltH, Tiltm)
+        
         positions = (PitchedBallTraj(x,y,z,Vtot,Theta,Psi,SpinRate,Tilt,Gyro,0,0))
         Plotting(positions)
         
@@ -59,45 +116,16 @@ def main():
             repeat = True
         else:
             repeat = False
+            
+            
+        i = i + 1
     
     for j in range(i):
-        plt.figure(4,figsize=(3,10))
-        plt.xlabel('x (in)')
-        plt.ylabel('y (ft)')
-        plt.title('Bird\'s Eye View')
-        plt.ylim(0,max(pY[j]) + 2.5)
-        plt.plot(pX[j],pY[j])
-        plt.scatter(IX[j]*12,IY[j], s=100, c = 'g')
-        plt.scatter(DX[j]*12,DY[j], s=100, c = 'y')
-        plt.scatter(FX[j]*12,FY[j], s=100, c = 'r')
-        plt.savefig("BirdsEye.jpg")
         
-        plt.figure(5, figsize=(3,6))
-        plt.xlabel('x (in)')
-        plt.ylabel('z (in)')
-        plt.title('Catcher\'s Perspective')
-        plt.ylim(0,max(pZ[j]) + 4)
-        plt.plot(pX[j],pZ[j])
-        plt.scatter(IX[j]*12,IZ[j]*12, s=100, c = 'g')
-        plt.scatter(DX[j]*12,DZ[j]*12, s=100, c = 'y')
-        plt.scatter(FX[j]*12,FZ[j]*12, s=100, c = 'r')
-        plt.savefig("Catcher.jpg")
-        
-        plt.figure(6,figsize=(10,3))
-        plt.xlabel('y (ft)')
-        plt.ylabel('z (in)')
-        plt.title('Side View')
-        plt.xlim(0,62.5)
-        plt.ylim(0,max(pZ[j]) + 9)
-        plt.plot(pY[j],pZ[j])
-        plt.scatter(IY[j],IZ[j]*12, s=100, c = 'g')
-        plt.scatter(DY[j],DZ[j]*12, s=100, c = 'y')
-        plt.scatter(FY[j],FZ[j]*12, s=100, c = 'r')
-    #    plt.show()
-        plt.savefig("Side.jpg")
+        plotSFinal(pX[j],pY[j],pZ[j],IX[j],IY[j],IZ[j],DX[j],DY[j],DZ[j],FX[j],FY[j],FZ[j],j)
     
 
-def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2):
+def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tiltd, Gyro, angle1, angle2):
     """
     This function is designed merely to generate the balls initial conditions
     It will take various options and output x0,y0,z0,u0,v0,w0,Spinx0,\
@@ -113,16 +141,14 @@ def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2):
     u0 = -uvmag*np.sin(Psi)
     v0 = uvmag*np.cos(Psi)
     
-    Tilt = Tilt*np.pi/180 # rad tilt
-    Gyro = Gyro*np.pi/180 # rad gyro
-    Spinxz = SpinRate*np.cos(Tilt)
+    Tilt = (Tiltd - 90)*np.pi/180 # rad tilt
+    Gyro = (Gyro)*np.pi/180 # rad gyro
     
-    Spinx0 = SpinRate*np.sin(Tilt)
-    Spiny0 = Spinxz*np.sin(Gyro)
-    Spinz0 = Spinxz*np.cos(Gyro)
+    Spinx0 = SpinRate*np.sin(Tilt)*np.cos(Gyro)
+    Spiny0 = SpinRate*np.sin(Tilt)*np.sin(Gyro)
+    Spinz0 = SpinRate*np.cos(Tilt)
     angle1 = 0
     angle2 = 0
-    
     
     print('\nu:',u0,'\nv:',v0,'\nw:',w0)
     print('\nSpinx0:',Spinx0,'\nSpiny0:',Spiny0,'\nSpinz0:',Spinz0)
@@ -157,7 +183,7 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
 #    print(FullState)
     
     x0 = x
-    y0 = y
+    y0 = 60.5 - y
     z0 = z
     u0 = FullState[0]
     v0 = FullState[1]
@@ -214,6 +240,12 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     xP = []
     yP = []
     zP = []
+    xD = BallState0[0]
+    yD = BallState0[1]
+    zD = BallState0[2]
+    uD = BallState0[3]
+    vD = BallState0[4]
+    wD = BallState0[5]
     while BallState0[1] > 0. and BallState0[2] > 0. and t < 10:
         #need to input a non-magnus ball path indicator.
         t = t + dt
@@ -231,6 +263,7 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
             uD = BallState0[3]
             vD = BallState0[4]
             wD = BallState0[5]
+            
         
         xP.append(BallState1[0]*12)
         yP.append(BallState1[1])
@@ -259,6 +292,9 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     finalApproachAngleyz = np.arctan2(abs(BallStateF[5]), abs(BallStateF[4]))
     finalApproachAnglexy = np.arctan2(abs(BallStateF[3]), abs(BallStateF[4]))
     
+    Hrs, mins = TiltToTime(Tilt)
+#    Tiltdegs = TimeToTilt(Hrs,mins)
+        
     
     print('initial conditions:')
     print('x0 (ft)------------------------------- ', to_precision(x0,4))
@@ -272,7 +308,12 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     print('Spiny0 (rpm)-------------------------- ', to_precision(Spiny0/-0.104719754,4))
     print('Spinz0 (rpm)-------------------------- ', to_precision(Spinz0/0.104719754,4))
     print('Total Spin Rate (rpm)----------------- ', to_precision(SpinRate0/0.104719754,4))
-    print('Initial Efficiency (%)---------------- ', to_precision(SpinEfficiency0*100,4))
+    print('Tilt (clock face)----------------------', Hrs,':',mins)
+#    print('Tilt (deg) --------------------------- ', to_precision(Tiltdegs,4))
+    if SpinRate0 == 0:
+        print('Initial Efficiency (%)---------------- NA')
+    else:
+        print('Initial Efficiency (%)---------------- ', to_precision(SpinEfficiency0*100,4))
     
     print('\n\nconditions at decision point:')
     print('x at decision point (ft)------------- ', to_precision(xD,4))
@@ -368,46 +409,30 @@ def Plotting(positions):
     plt.scatter(yF,zF*12, s=100, c = 'r')
     plt.show()
     
-def PlottingII(positions):
-    
-    
-    xP = positions[0]
-    yP = positions[1]
-    zP = positions[2]
-    x0 = positions[3]
-    y0 = positions[4]
-    z0 = positions[5]
-    xD = positions[6]
-    yD = positions[7]
-    zD = positions[8]
-    xF = positions[9]
-    yF = positions[10]
-    zF = positions[11]
+def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
     
     plt.figure(4,figsize=(3,10))
     plt.xlabel('x (in)')
     plt.ylabel('y (ft)')
     plt.title('Bird\'s Eye View')
-    plt.ylim(0,max(yP) +2.5)
-    plt.plot(xP,yP)
-    plt.scatter(x0*12,y0, s=100, c = 'g')
-    plt.scatter(xD*12,yD, s=100, c = 'y')
-    plt.scatter(xF*12,yF, s=100, c = 'r')
-#    plt.show()
+    plt.ylim(0,max(pY) + 2.5)
+    plt.plot(pX,pY, label=j+1)
+    plt.legend()
+    plt.scatter(IX*12,IY, s=100, c = 'g')
+    plt.scatter(DX*12,DY, s=100, c = 'y')
+    plt.scatter(FX*12,FY, s=100, c = 'r')
     plt.savefig("BirdsEye.jpg")
     
     plt.figure(5, figsize=(3,6))
     plt.xlabel('x (in)')
     plt.ylabel('z (in)')
     plt.title('Catcher\'s Perspective')
-    plt.plot(x0,z0,'g')
-#    plt.xlim(-17., 17.)
-    plt.ylim(0,max(zP) + 4)
-    plt.plot(xP,zP)
-    plt.scatter(x0*12,z0*12, s=100, c = 'g')
-    plt.scatter(xD*12,zD*12, s=100, c = 'y')
-    plt.scatter(xF*12,zF*12, s=100, c = 'r')
-#    plt.show()
+    plt.ylim(0,max(pZ) + 4)
+    plt.plot(pX,pZ, label=j+1)
+    plt.legend()
+    plt.scatter(IX*12,IZ*12, s=100, c = 'g')
+    plt.scatter(DX*12,DZ*12, s=100, c = 'y')
+    plt.scatter(FX*12,FZ*12, s=100, c = 'r')
     plt.savefig("Catcher.jpg")
     
     plt.figure(6,figsize=(10,3))
@@ -415,14 +440,31 @@ def PlottingII(positions):
     plt.ylabel('z (in)')
     plt.title('Side View')
     plt.xlim(0,62.5)
-    plt.ylim(0,max(zP) + 9)
-    plt.plot(yP,zP)
-    plt.scatter(y0,z0*12, s=100, c = 'g')
-    plt.scatter(yD,zD*12, s=100, c = 'y')
-    plt.scatter(yF,zF*12, s=100, c = 'r')
+    plt.ylim(0,max(pZ) + 9)
+    plt.plot(pY,pZ, label=j+1)
+    plt.legend()
+    plt.scatter(IY,IZ*12, s=100, c = 'g')
+    plt.scatter(DY,DZ*12, s=100, c = 'y')
+    plt.scatter(FY,FZ*12, s=100, c = 'r')
 #    plt.show()
     plt.savefig("Side.jpg")
     
+def TiltToTime(Tilt):
+    
+    TiltTime = (((Tilt)%360)/360)*12    
+    Hrs = int(TiltTime)
+    if Hrs == 0:
+        Hrs = 12
+    mins = int(TiltTime*60)%60
+    return(Hrs,mins)
+    
+def TimeToTilt(Hrs, mins):
+    """
+    Take the tilt in hrs and mins and turns it into deg
+    """
+    degHrs = (Hrs/12)*360
+    degmins = (mins/60)*360
+    return(degHrs + degmins)
     
 def derivs(t, BallState, BallConsts):
     
