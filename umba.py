@@ -67,8 +67,7 @@ can be changed for comparison. To retain the current value, just press return")
     while repeat == True:
             
         if i == 0:
-            print('\n\nIf you want to keep the previous value simply hit return.')
-        print('')
+            print('\n\nIf you want to keep the current value simply hit return. Otherwise enter a new value.\n\n')
         print("Current initial speed set to ",Vtot)
         QVtot = (input('what is the ball\'s total initial speed (mph): '))
         if QVtot == "":
