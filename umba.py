@@ -164,9 +164,7 @@ can be changed for comparison. To retain the current value, just press return")
             
         i = i + 1
     
-    for j in range(i):
-        
-        plotSFinal(pX[j],pY[j],pZ[j],IX[j],IY[j],IZ[j],DX[j],DY[j],DZ[j],FX[j],FY[j],FZ[j],j)
+    plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,i)
     
 
 def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tiltd, Gyro, angle1, angle2):
@@ -475,24 +473,26 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
     plt.xlabel('x (in)')
     plt.ylabel('y (ft)')
     plt.title('Bird\'s Eye View')
-    plt.ylim(0,max(pY) + 2.5)
-    plt.plot(pX,pY, label=j+1)
-    plt.legend()
-    plt.scatter(IX*12,IY, s=100, c = 'g')
-    plt.scatter(DX*12,DY, s=100, c = 'y')
-    plt.scatter(FX*12,FY, s=100, c = 'r')
+#    plt.ylim(0,max(pY) + 2.5)
+    for i in range(j):
+        plt.plot(pX[i],pY[i], label = i)
+        plt.legend()
+        plt.scatter(IX[i]*12,IY[i], s=100, c = 'g')
+        plt.scatter(DX[i]*12,DY[i], s=100, c = 'y')
+        plt.scatter(FX[i]*12,FY[i], s=100, c = 'r')
     plt.savefig("BirdsEye.jpg")
     
     plt.figure(5, figsize=(3,6))
     plt.xlabel('x (in)')
     plt.ylabel('z (in)')
     plt.title('Catcher\'s Perspective')
-    plt.ylim(0,max(pZ) + 4)
-    plt.plot(pX,pZ, label=j+1)
-    plt.legend()
-    plt.scatter(IX*12,IZ*12, s=100, c = 'g')
-    plt.scatter(DX*12,DZ*12, s=100, c = 'y')
-    plt.scatter(FX*12,FZ*12, s=100, c = 'r')
+#    plt.ylim(0,max(pZ) + 4)
+    for i in range(j):
+        plt.plot(pX[i],pZ[i], label=i)
+        plt.legend()
+        plt.scatter(IX[i]*12,IZ[i]*12, s=100, c = 'g')
+        plt.scatter(DX[i]*12,DZ[i]*12, s=100, c = 'y')
+        plt.scatter(FX[i]*12,FZ[i]*12, s=100, c = 'r')
     plt.savefig("Catcher.jpg")
     
     plt.figure(6,figsize=(10,3))
@@ -500,12 +500,13 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
     plt.ylabel('z (in)')
     plt.title('Side View')
     plt.xlim(0,62.5)
-    plt.ylim(0,max(pZ) + 9)
-    plt.plot(pY,pZ, label=j+1)
-    plt.legend()
-    plt.scatter(IY,IZ*12, s=100, c = 'g')
-    plt.scatter(DY,DZ*12, s=100, c = 'y')
-    plt.scatter(FY,FZ*12, s=100, c = 'r')
+#    plt.ylim(0,max(pZ) + 9)
+    for i in range(j):
+        plt.plot(pY[i],pZ[i], label=i)
+        plt.legend()
+        plt.scatter(IY[i],IZ[i]*12, s=100, c = 'g')
+        plt.scatter(DY[i],DZ[i]*12, s=100, c = 'y')
+        plt.scatter(FY[i],FZ[i]*12, s=100, c = 'r')
 #    plt.show()
     plt.savefig("Side.jpg")
     
@@ -594,7 +595,6 @@ def ClKensrud(r,Spin,u):
 def to_precision(x,p):
     """
     returns a string representation of x formatted with a precision of p
-
     Based on the webkit javascript implementation taken from here:
     https://code.google.com/p/webkit-mirror/source/browse/JavaScriptCore/kjs/number_object.cpp
     """
