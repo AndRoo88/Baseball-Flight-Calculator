@@ -7,12 +7,13 @@ import matplotlib.pyplot as plt
 def main():
         
     print("This baseball trajectory calculator models \
-still air at sea level with about 60% humidity.\nThe ambient\
-conditions are fixed can be adjusted in the code \
-if needed or made into variable at a later time.\n\
-\nAll initial ball state variables have default values that approximate\
- a 90 mph ball with no spin.\nThe release point is only asked once\
-and remains the same for subsequent pitches.\n All other variables\
+still air at sea level with about 60% humidity and 60 f.\nThe ambient \
+conditions are fixed can be adjusted in the code if needed or made into \
+variable at a later time.\n\
+\n \
+All initial ball state variables have default values that approximate \
+a 90 mph ball with no spin.\nThe release point is only asked once\
+and remains the same for subsequent pitches.\nAll other variables\
 can be changed for comparison. To retain the current value, just press return")
     
     
@@ -117,7 +118,7 @@ can be changed for comparison. To retain the current value, just press return")
         else:
             SpinE = float(QSpinE)
         if SpinE == 100:
-            Gyro = 0
+            Gyro = np.arccos(1 - (SpinE/100))
         else:
             TiltHnewUp = TiltH + 3
             if TiltHnewUp > 12:
@@ -129,17 +130,21 @@ can be changed for comparison. To retain the current value, just press return")
                 TiltHnewDn = int(TiltHnewDn + 12)
             else:
                 TiltHnewDn = int(TiltHnewDn)
-            print('if',TiltHnewUp,':',Tiltm,'is forward enter " r "\n \
-                              if', TiltHnewDn,':',int(Tiltm),'is forward enter " l "')
-            leftRightGyro = input()
-            if leftRightGyro == 'l':
-                Gyro = np.arcsin(SpinE/100)
-            elif leftRightGyro == 'r':
-                Gyro = -np.arcsin(SpinE/100)
+                
+            print('if', TiltHnewUp,':',int(Tiltm),'is forward enter " r "')
+            print('if', TiltHnewDn,':',int(Tiltm),'is forward enter " l "')
+            
+            leftRightGyro = ''
+            while leftRightGyro  != 'l' and leftRightGyro != 'r':
+                leftRightGyro = input("l/r\n")
+                if leftRightGyro == 'l':
+                    Gyro = np.arccos(1 - (SpinE/100))
+                elif leftRightGyro == 'r':
+                    Gyro = np.pi - np.arccos(1- (SpinE/100))
+        print(Gyro)
+        Tiltr = TimeToTilt(TiltH, Tiltm)
         
-        Tilt = TimeToTilt(TiltH, Tiltm)
-        
-        positions = (PitchedBallTraj(x,y,z,Vtot,Theta,Psi,SpinRate,Tilt,Gyro,0,0))
+        positions = (PitchedBallTraj(x,y,z,Vtot,Theta,Psi,SpinRate,Tiltr,Gyro,0,0))
         Plotting(positions)
         
         pX.append(positions[0])
@@ -155,19 +160,36 @@ can be changed for comparison. To retain the current value, just press return")
         FY.append(positions[10])
         FZ.append(positions[11])
         
-        Again = input("Would you like to look at another pitch?\n")
-        if Again == 'y' or Again == 'yes' or Again == 'Y' or Again == 'YES' or Again == 'Yes':
-            repeat = True
-        else:
-            repeat = False
-            
+        leave = False
+        k = 0
+        
+        while leave == False:
+            k = k+1
+            if k == 1:
+                Again = input("Would you like to look at another pitch?\n")
+            elif k > 6:
+                Again = 'n'
+            elif k > 5:
+                Again = input("Last Chance.Would you like to look at another pitch (y/n)?\n")
+            else:
+                Again = input("Would you like to look at another pitch (y/n)?\n")
+             
+                
+            if Again == 'y' or Again == 'yes' or Again == 'Y' or Again == 'YES' or Again == 'Yes':
+                repeat = True
+                leave = True
+            elif Again == 'n' or Again == 'no' or Again == 'N' or Again == 'NO' or Again == 'No':
+                repeat = False
+                leave = True
+            else:
+                leave = False
             
         i = i + 1
     
     plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,i)
     
 
-def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tiltd, Gyro, angle1, angle2):
+def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2):
     """
     This function is designed merely to generate the balls initial conditions
     It will take various options and output x0,y0,z0,u0,v0,w0,Spinx0,\
@@ -183,12 +205,12 @@ def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tiltd, Gyro, angle1, angle2):
     u0 = -uvmag*np.sin(Psi)
     v0 = uvmag*np.cos(Psi)
     
-    Tilt = (Tiltd - 90)*np.pi/180 # rad tilt
-    Gyro = (Gyro)*np.pi/180 # rad gyro
+    Tilt = (Tilt) # rad tilt
+    Gyro = (Gyro) # rad gyro
     
-    Spinx0 = SpinRate*np.sin(Tilt)*np.cos(Gyro)
-    Spiny0 = SpinRate*np.sin(Tilt)*np.sin(Gyro)
-    Spinz0 = SpinRate*np.cos(Tilt)
+    Spinx0 = SpinRate*np.sin(Gyro)*np.sin(Tilt)
+    Spiny0 = SpinRate*np.cos(Gyro)
+    Spinz0 = -SpinRate*np.sin(Gyro)*np.cos(Tilt)
     angle1 = 0
     angle2 = 0
     
@@ -301,16 +323,7 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
                  .format(t,BallState1[0],BallState1[1],BallState1[2],BallState1[3],BallState1[4],BallState1[5],BallState1[6],BallState1[7],BallState1[8]))
         
         BallState0 = BallState1
-        
-        if t > decisionPoint - 0.5*dt and t < decisionPoint + 0.5*dt:
-            xD = BallState0[0]
-            yD = BallState0[1]
-            zD = BallState0[2]
-            uD = BallState0[3]
-            vD = BallState0[4]
-            wD = BallState0[5]
             
-        
         xP.append(BallState1[0]*12)
         yP.append(BallState1[1])
         zP.append(BallState1[2]*12)
@@ -318,14 +331,23 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
         vP.append(BallState1[4])
         wP.append(BallState1[5])
         
-    
-
-    xD = xP[int(.2/dt)]/12
-    yD = yP[int(.2/dt)]
-    zD = zP[int(.2/dt)]/12
-    uD = uP[int(.2/dt)]
-    vD = vP[int(.2/dt)]
-    wD = wP[int(.2/dt)]
+    DecisionPointStep = int(.2/dt)
+    if t < decisionPoint:
+        print("WOW! no batter has enough skill to hit a ball thrown that fast")
+        
+        xD = -10
+        yD = -10
+        zD = -10
+        uD = 0
+        vD = 0
+        wD = 0
+    else:
+        xD = xP[DecisionPointStep]/12
+        yD = yP[DecisionPointStep]
+        zD = zP[DecisionPointStep]/12
+        uD = uP[DecisionPointStep]
+        vD = vP[DecisionPointStep]
+        wD = wP[DecisionPointStep]
     
     BallStateF = BallState1
     xF, yF, zF = BallStateF[0], BallStateF[1], BallStateF[2]
@@ -480,6 +502,7 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
         plt.scatter(IX[i]*12,IY[i], s=100, c = 'g')
         plt.scatter(DX[i]*12,DY[i], s=100, c = 'y')
         plt.scatter(FX[i]*12,FY[i], s=100, c = 'r')
+    plt.show()
     plt.savefig("BirdsEye.jpg")
     
     plt.figure(5, figsize=(3,6))
@@ -493,6 +516,7 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
         plt.scatter(IX[i]*12,IZ[i]*12, s=100, c = 'g')
         plt.scatter(DX[i]*12,DZ[i]*12, s=100, c = 'y')
         plt.scatter(FX[i]*12,FZ[i]*12, s=100, c = 'r')
+    plt.show()
     plt.savefig("Catcher.jpg")
     
     plt.figure(6,figsize=(10,3))
@@ -507,7 +531,7 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
         plt.scatter(IY[i],IZ[i]*12, s=100, c = 'g')
         plt.scatter(DY[i],DZ[i]*12, s=100, c = 'y')
         plt.scatter(FY[i],FZ[i]*12, s=100, c = 'r')
-#    plt.show()
+    plt.show()
     plt.savefig("Side.jpg")
     
 def TiltToTime(Tilt):
@@ -523,9 +547,9 @@ def TimeToTilt(Hrs, mins):
     """
     Take the tilt in hrs and mins and turns it into deg
     """
-    degHrs = (Hrs/12)*360
-    degmins = (mins/60)*360
-    return(degHrs + degmins)
+    radHrs = ((Hrs-3)*np.pi/6)
+    radmins = (mins*np.pi/360)
+    return(radHrs + radmins)
     
 def derivs(t, BallState, BallConsts):
     
