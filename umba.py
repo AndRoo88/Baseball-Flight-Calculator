@@ -7,12 +7,11 @@ import matplotlib.pyplot as plt
 def main():
         
     print("This baseball trajectory calculator models \
-still air at sea level with about 60% humidity and 60 f.\nThe ambient \
-conditions are fixed can be adjusted in the code if needed or made into \
-variable at a later time.\n\
-\n \
-All initial ball state variables have default values that approximate \
-a 90 mph ball with no spin.\nThe release point is only asked once\
+still air at sea level with about 60% humidity.\nThe ambient\
+ conditions are fixed can be adjusted in the code \
+if needed or made into variable at a later time.\n\
+\nAll initial ball state variables have default values that approximate\
+ a 90 mph ball with no spin.\nThe release point is only asked once\
 and remains the same for subsequent pitches.\nAll other variables\
 can be changed for comparison. To retain the current value, just press return")
     
@@ -136,7 +135,7 @@ can be changed for comparison. To retain the current value, just press return")
             
             leftRightGyro = ''
             while leftRightGyro  != 'l' and leftRightGyro != 'r':
-                leftRightGyro = input("l/r\n")
+                leftRightGyro = input("l/r")
                 if leftRightGyro == 'l':
                     Gyro = np.arccos(1 - (SpinE/100))
                 elif leftRightGyro == 'r':
@@ -144,7 +143,7 @@ can be changed for comparison. To retain the current value, just press return")
         print(Gyro)
         Tiltr = TimeToTilt(TiltH, Tiltm)
         
-        positions = (PitchedBallTraj(x,y,z,Vtot,Theta,Psi,SpinRate,Tiltr,Gyro,0,0))
+        positions = (PitchedBallTraj(x,y,z,Vtot,Theta,Psi,SpinRate,Tiltr,Gyro,0,0,i))
         Plotting(positions)
         
         pX.append(positions[0])
@@ -225,7 +224,7 @@ def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2):
     
     return FullState
 
-def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2):
+def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2,i):
     
     """
         Primay inputs are: initial position, x0, y0, and z0 with origin at the
@@ -294,9 +293,10 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     #assumes that the efficiency is non-linear and that it follows the sin of the 
     #angle between the ball direction and the spin.
     
+    
     BallState0 = [x0,y0,z0,u0,v0,w0,Spinx0,Spiny0,Spinz0]
     
-    fileBT = open("001BallTrajectoryNEW.txt","w+")
+    fileBT = open(str(i) + "BallTrajectoryNEW.txt","w+")
     fileBT.write("time        x        y         z          u            v       w      Spin x     Spin y    Spin z\n")
     fileBT.write("==================================================================================================\n")
     fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
