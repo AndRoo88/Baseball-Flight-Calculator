@@ -45,6 +45,7 @@ wheels/
 
 # Images
 *.png
+*.jpg
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
