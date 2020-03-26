@@ -29,6 +29,8 @@ can be changed for comparison. To retain the current value, just press return")
     FZ = []
     
     #x y and z here are typical of an approximately 6' tall rhp
+    # these are the defualt initial values and can be changed here or as the code runs
+    # as the code
     x = -1
     y = 5.5
     z = 6
@@ -74,15 +76,15 @@ can be changed for comparison. To retain the current value, just press return")
         else:
             Vtot = float(QVtot)
             
-        print("Current initial upward angle set to ",Theta)
-        QTheta = (input('what is the ball\'s initial upwards angle (deg): '))
+        print("Current vertical release angle set to ",Theta)
+        QTheta = (input('what is the ball\'s vertical release angle (deg): '))
         if QTheta == "":
             Theta = Theta
         else:
             Theta = float(QTheta)
             
-        print("Current initial direction angle set to ", Psi)
-        QPsi = (input('what is the ball\'s  initial direction angle(deg): '))
+        print("Current horizontal release angle set to ", Psi)
+        QPsi = (input('what is the ball\'s horizontal release angle(deg): '))
         if QPsi == "":
             Psi = Psi
         else:
