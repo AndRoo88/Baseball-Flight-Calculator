@@ -1,0 +1,61 @@
+# Eclipse
+.classpath
+.project
+.pydevproject
+.settings/
+hs_err_*.log
+
+# IDEA
+.idea
+
+# Maven
+log/
+logs/
+target/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*$py.class
+*.pyo
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+#Unknown
+.octaverc
+
+# Images
+*.png
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+# Misc
+*.pickle
+*.csv
+*.txt
+*.json
+
+*.log
+htmlcov
