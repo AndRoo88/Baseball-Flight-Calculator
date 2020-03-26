@@ -503,8 +503,8 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
         plt.scatter(IX[i]*12,IY[i], s=100, c = 'g')
         plt.scatter(DX[i]*12,DY[i], s=100, c = 'y')
         plt.scatter(FX[i]*12,FY[i], s=100, c = 'r')
+        plt.savefig("BirdsEye.jpg")
     plt.show()
-    plt.savefig("BirdsEye.jpg")
     
     plt.figure(5, figsize=(3,6))
     plt.xlabel('x (in)')
@@ -517,8 +517,8 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
         plt.scatter(IX[i]*12,IZ[i]*12, s=100, c = 'g')
         plt.scatter(DX[i]*12,DZ[i]*12, s=100, c = 'y')
         plt.scatter(FX[i]*12,FZ[i]*12, s=100, c = 'r')
+        plt.savefig("Catcher.jpg")
     plt.show()
-    plt.savefig("Catcher.jpg")
     
     plt.figure(6,figsize=(10,3))
     plt.xlabel('y (ft)')
@@ -532,8 +532,8 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
         plt.scatter(IY[i],IZ[i]*12, s=100, c = 'g')
         plt.scatter(DY[i],DZ[i]*12, s=100, c = 'y')
         plt.scatter(FY[i],FZ[i]*12, s=100, c = 'r')
+        plt.savefig("Side.jpg")
     plt.show()
-    plt.savefig("Side.jpg")
     
 def TiltToTime(Tilt):
     
