@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+#from mpl_toolkits import mplot3d
 
 def Plotting(positions):
     
@@ -57,6 +59,56 @@ def Plotting(positions):
     plt.scatter(yF,zF*12, s=100, c = 'r')
     plt.show()
     
+###############################################################################    
+    
+def plotSeams(xSeam,ySeam,zSeam,sx,sy,sz,num):
+    """
+    plots in 3 dimensions 3 arrays
+    """
+    radius = (2. + 15/16)/2 #in
+    
+    SpinVecMag = np.sqrt(sx**2 + sy**2 + sz**2)
+    
+    nx = sx/(SpinVecMag)
+    ny = sy/(SpinVecMag)
+    nz = sz/(SpinVecMag)
+    
+    nvec = [nx,ny,nz] #normalized Vector
+    SpinAxis = [i*radius for i in nvec]
+    SpinAxisneg = [-i*radius for i in nvec]
+    
+    xax = [SpinAxis[0],SpinAxisneg[0]]
+    yax = [SpinAxis[1],SpinAxisneg[1]]
+    zax = [SpinAxis[2],SpinAxisneg[2]]
+    
+    
+    x = xSeam
+    y = ySeam
+    z = zSeam
+
+    fig = plt.figure(num)
+    ax = fig.add_subplot(111,projection='3d')
+    ax.scatter(x, y, z, color = 'r')
+    ax.scatter(x[0],y[0],z[0], color = 'b', s = 80, marker = 's')
+    ax.plot(xax,yax,zax)
+#    ax.scatter(SpinAxisneg[0], SpinAxisneg[1], SpinAxisneg[2], s = 60, marker = 'v')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+#    t = num*.0021
+    plt.title('time: %1.3f' %num)
+
+    max_range = 1.3554770667211864
+    mid_x = -0.00044881302015253866
+    mid_y = 0.0
+    mid_z = 0.00029216404804432994
+    ax.set_xlim(mid_x - max_range, mid_x + max_range)
+    ax.set_ylim(mid_y - max_range, mid_y + max_range)
+    ax.set_zlim(mid_z - max_range, mid_z + max_range)
+    plt.show()
+    
+###############################################################################    
+        
 def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
     
     plt.figure(4,figsize=(3,10))
@@ -91,8 +143,8 @@ def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
     plt.xlabel('y (ft)')
     plt.ylabel('z (in)')
     plt.title('Side View')
-#    plt.xlim(0,62.5)
-#    plt.ylim(0,max(pZ) + 9)
+    plt.xlim(0,62.5)
+    plt.ylim(0,89.)
     for i in range(j):
         plt.plot(pY[i],pZ[i], label=i)
         plt.legend()

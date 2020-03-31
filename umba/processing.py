@@ -1,29 +1,119 @@
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 import math
+import plotting
 
 
-
-
-
-def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2,i):
-    
+def initializeSeam():
     """
-        Primay inputs are: initial position, x0, y0, and z0 with origin at the
-        point of home plate, x to the rright of the catcher, y from the catcher 
-        towards the pitcher, and z straight up. Initial velocities
-        u0, v0, and w0 which are the speeds of the ball in x, y, and z 
-        respectivley. And spin rates
-        
-    
-       GUMBA1.0: This code uses a constant Cd and rod cross's model for CL
-       Predictions. Seam Orientation is not accounted for. Air Density is
-       considered only at sea level at 60% relative humidity. but can be easily
-       altered
+    This function defines the seams of a baseball. It is
+    based, in large extant, on the work from
+    http://www.darenscotwilson.com/spec/bbseam/bbseam.html
     """
+    n = 108 #number of points were calculating on the seam line
+    alpha = np.linspace(0,np.pi*2,n)
+    x = np.zeros(len(alpha))
+    y = np.zeros(len(alpha))
+    z = np.zeros(len(alpha))
+    R = (2 + 15/16.)/2
+    for i in range(len(alpha)):
+
+        x[i] = ((1/13)*(9*np.cos(alpha[i]) - 4*np.cos(3*alpha[i])))
+        y[i] = ((1/13)*(9*np.sin(alpha[i]) + 4*np.sin(3*alpha[i])))
+        z[i] = ((12/13)*R*np.cos(2*alpha[i]))
+
+    x[0] = 0
+    y[0] = 0
+    z[0] = R
     
-    FullState = anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, 0,0)
+    return x,y,z
+    
+###############################################################################    
+    
+def rotateSeam(x, y, z, Spinx,Spiny,Spinz,dt):
+    """
+    takes an initial seam orientation calculates new seam positions based on
+    a cartesian spin rate vector. A rotation vecotr is calculated based on the
+    spin rate vector and the time step.
+    """
+    xn = np.zeros(len(x))
+    yn = np.zeros(len(y))
+    zn = np.zeros(len(z))
+    RotVec = [Spinx*dt,Spiny*dt,Spinz*dt]
+    r = R.from_rotvec(RotVec)
+    for i in range(len(x)):
+        vec = [x[i],y[i],z[i]]
+        vecN = r.apply(vec)
+        xn[i] = vecN[0]
+        yn[i] = vecN[1]
+        zn[i] = vecN[2]
+
+    return(xn,yn,zn)
+    
+###############################################################################    
+            
+def findRotVec(sx0,sy0,sz0, sx1,sy1,sz1):
+    SpinVecMag0 = np.sqrt(sx0**2 + sy0**2 + sz0**2)
+    if SpinVecMag0 == 0:
+        return(0,0,0)
+    s = (3,3)
+    RM = np.zeros(s)
+    
+    nx0 = sx0/(SpinVecMag0)
+    ny0 = sy0/(SpinVecMag0)
+    nz0 = sz0/(SpinVecMag0)
+    
+    nvec0 = [nx0,ny0,nz0]
+    
+    
+    SpinVecMag1 = np.sqrt(sx1**2 + sy1**2 + sz1**2)
+    
+    nx1 = sx1/(SpinVecMag1)
+    ny1 = sy1/(SpinVecMag1)
+    nz1 = sz1/(SpinVecMag1)
+    
+    nvec1 = [nx1,ny1,nz1]
+    
+    axis = np.cross(nvec0, nvec1)
+    axisLength = np.sqrt(axis[0]**2 + axis[1]**2 + axis[2]**2)
+    if axisLength != 0:
+        axis = axis/axisLength
+    
+    x = axis[0]
+    y = axis[1]
+    z = axis[2]
+    
+    angle = np.arccos(np.dot(nvec0,nvec1))
+    
+    ca = np.cos(angle)
+    sa = np.sin(angle)
+    
+    
+    RM[0,0] = 1.0 + (1.0 - ca)*(x**2 - 1.0)
+    RM[0,1] = -z*sa + (1.0 - ca)*x*y
+    RM[0,2] = y*sa + (1.0 - ca)*x*z
+    RM[1,0] = z*sa+(1.0 - ca)*x*y
+    RM[1,1] = 1.0 + (1.0 - ca)*(y**2 - 1.0)
+    RM[1,2] = -x*sa+(1.0 - ca)*y*z
+    RM[2,0] = -y*sa+(1.0 - ca)*x*z
+    RM[2,1] = x*sa+(1.0 - ca)*y*z
+    RM[2,2] = 1.0 + (1.0 - ca)*(z**2 - 1.0)
+    
+    r = R.from_dcm(RM)
+    V = R.as_rotvec(r)
+#    print(V)
+    return(V)
+    
+###############################################################################    
+    
+def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle,i):
+
+
+    #this is wehre the work needs to happen now
+
+    FullState = anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle)
 #    print(FullState)
-    
+
     x0 = x
     y0 = 60.5 - y
     z0 = z
@@ -33,54 +123,73 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     Spinx0 = FullState[3]
     Spiny0 = FullState[4]
     Spinz0 = FullState[5]
-    angle1 = FullState[6]
-    angle2 = FullState[7]
+    Yangle = FullState[6] #angle 1 is the angle from
+    Zangle = FullState[7]
+
+#    SpinNorm = np.linalg([Spinx0, Spiny0, Spinz0])
+
+    xSeam, ySeam, zSeam = initializeSeam() #initialized seams to a 90 deg x rotations
+    # see https://www.baseballaero.com/2020/03/09/describing-ball-orientation-post-51/
+    # for further info
+    xSeam, ySeam, zSeam = rotateSeam(xSeam, ySeam, zSeam, -np.pi/2, 0, 0, 1)
+    xSeam, ySeam, zSeam = rotateSeam(xSeam, ySeam, zSeam, 0, np.pi/2, 0, 1)
+    RotVec = findRotVec(0,0,0,Spinx0,Spiny0,Spinz0)
+    print(Yangle,Zangle)
+    print(RotVec)
+    RotVec = findRotVec(0, Zangle, Yangle, Spinx0, Spiny0, Spinz0)
+    print(RotVec)
+    xSeam0, ySeam0, zSeam0 = rotateSeam(xSeam, ySeam, zSeam, RotVec[0],RotVec[1],RotVec[2],1)
+
+    plotting.plotSeams(xSeam0, ySeam0, zSeam0, Spinx0, Spiny0, Spinz0, i+1)
     
-    # All air properties are the approximate averages for sea level over the season 
+    
+    # extablished the (0,0) initial condition as a 2-seam spin
+
+    # All air properties are the approximate averages for sea level over the season
 #    rhoDRY = 0.0765 #lb/ft^3
 #    relHum = 0.73
 #    Temp = 60 #deg fahrenheit
     rho = 0.074  #lb/ft^3, with humidity at sea level
-    
+
     circ = 9.125/12 #ft
     diameter = (2. + 15/16)/12 #ft
     Area = .25*np.pi*diameter**2 #ft^2
     mass = 0.3203125 #lbm
     c0 = 0.5*rho*Area/mass
     BallConsts = [circ,diameter,Area,mass,c0]
-    
+
     t0 = 0.0
     t = t0
     dt = 0.001
-    
+
     u0 = u0 *1.467#ft/sec
     v0 = -v0 *1.467#ft/sec
     w0 = w0 *1.467#ft/sec
-    
+
     Spinx0 = Spinx0 * .104719754 #rad/s
     Spiny0 = Spiny0 * -.104719754
     Spinz0 = Spinz0 * .104719754
-    
-    decisionPoint = 0.2 #sec #time before ball arrives when batter has 
+
+    decisionPoint = 0.2 #sec #time before ball arrives when batter has
                         #to decide to hit or not.
-    
+
     SpinVec = [Spinx0,Spiny0,Spinz0]
     Vel = [u0,v0,w0]
     VelTot = np.sqrt(u0**2 + v0**2 + w0**2)
     SpinRate0 = np.sqrt(Spinx0**2 + Spiny0**2 + Spinz0**2)
     SpinEfficiency0 = 1-abs(np.dot(Vel, SpinVec)/(SpinRate0*VelTot))
-    #assumes that the efficiency is non-linear and that it follows the sin of the 
+    #assumes that the efficiency is non-linear and that it follows the sin of the
     #angle between the ball direction and the spin.
-    
-    
+
+
     BallState0 = [x0,y0,z0,u0,v0,w0,Spinx0,Spiny0,Spinz0]
-    
+
     fileBT = open(str(i) + "BallTrajectoryNEW.txt","w+")
     fileBT.write("time        x        y         z          u            v       w      Spin x     Spin y    Spin z\n")
     fileBT.write("==================================================================================================\n")
     fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
                  .format(t,x0,y0,z0,u0,v0,w0,Spinx0,Spiny0,Spinz0))
-    
+
     xP = []
     yP = []
     zP = []
@@ -94,26 +203,38 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     vD = BallState0[4]
     wD = BallState0[5]
     while BallState0[1] > 0. and BallState0[2] > 0. and t < 20:
+        
         #need to input a non-magnus ball path indicator.
         t = t + dt
         BallState1 = RK4(t, BallState0, dt, BallConsts)
         
+        xSeam1, ySeam1, zSeam1 = rotateSeam(xSeam0, ySeam0, zSeam0, BallState1[6],BallState1[7],BallState1[8],dt)
+        xSeam0 = xSeam1
+        ySeam0 = ySeam1
+        zSeam0 = zSeam1
+        
+#         # This section is for showing the spin behaviour of the ball and where
+#         # the seams are moving
+#        if t % .002 > -0.0000001 and t % .002 < 0.0000001 and (SpinRate0*t) < np.pi*2 and t <= .101:
+#            plotting.plotSeams(xSeam1, ySeam1, zSeam1, Spinx0, Spiny0, Spinz0, t)
+        
+        
         fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
                  .format(t,BallState1[0],BallState1[1],BallState1[2],BallState1[3],BallState1[4],BallState1[5],BallState1[6],BallState1[7],BallState1[8]))
-        
+
         BallState0 = BallState1
-            
+
         xP.append(BallState1[0]*12)
         yP.append(BallState1[1])
         zP.append(BallState1[2]*12)
         uP.append(BallState1[3])
         vP.append(BallState1[4])
         wP.append(BallState1[5])
-        
+
     DecisionPointStep = int(t - (.2/dt))
     if t < decisionPoint:
         print("WOW! no batter has enough skill to hit a ball thrown that fast")
-        
+
         xD = -10
         yD = -10
         zD = -10
@@ -127,34 +248,34 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
         uD = uP[DecisionPointStep]
         vD = vP[DecisionPointStep]
         wD = wP[DecisionPointStep]
-    
+
     BallStateF = BallState1
     xF, yF, zF = BallStateF[0], BallStateF[1], BallStateF[2]
     fileBT.close()
-    
+
     dzNoSpin = w0*t - (32.2/2)*t*t
     zfg = z0 + dzNoSpin
     vBreak = BallStateF[2] - zfg
-    
+
     dxNoSpin = u0*t
     xfg = x0 + dxNoSpin
     hBreak = BallStateF[0] - xfg
-    
+
     SpinVecF = [BallStateF[6],BallStateF[7],BallStateF[8]]
     VelF = [BallStateF[3],BallStateF[4],BallStateF[5]]
     VelTotF = np.sqrt(BallStateF[3]**2 + BallStateF[4]**2 + BallStateF[5]**2)
     SpinRateF = np.sqrt(BallStateF[6]**2 + BallStateF[7]**2 + BallStateF[8]**2)
     SpinEfficiencyF = 1-abs(np.dot(VelF, SpinVecF)/(SpinRateF*VelTotF))
-    
+
     totalRotations = SpinRateF/(2*np.pi) #assumes no spin decay
-    
+
     finalApproachAngleyz = np.arctan2(abs(BallStateF[5]), abs(BallStateF[4]))
     finalApproachAnglexy = np.arctan2(abs(BallStateF[3]), abs(BallStateF[4]))
-    
+
     Hrs, mins = TiltToTime(Tilt)
 #    Tiltdegs = TimeToTilt(Hrs,mins)
-        
-    
+
+
     print('initial conditions:')
     print('x0 (ft)------------------------------- ', to_precision(x0,4))
     print('y0 (ft)------------------------------- ', to_precision(y0,4))
@@ -173,7 +294,7 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
         print('Initial Efficiency (%)---------------- NA')
     else:
         print('Initial Efficiency (%)---------------- ', to_precision(SpinEfficiency0*100,4))
-    
+
     print('\n\nconditions at decision point:')
     print('x at decision point (ft)------------- ', to_precision(xD,4))
     print('y at decision point (ft)------------- ', to_precision(yD,4))
@@ -181,7 +302,7 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     print('u at decision point (ft)--------------', to_precision(uD,4))
     print('v at decision point (ft)--------------', to_precision(vD,4))
     print('w at decision point (ft)--------------', to_precision(wD,4))
-    
+
     print('\n\nconditions across the plate:')
     print('xf (ft)-------------------------------', to_precision(BallStateF[0],4))
     print('yf (ft)-------------------------------', to_precision(BallStateF[1],4)) # actually just the last point data was taken
@@ -200,25 +321,29 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2
     print('dx after decision point (ft)----------', to_precision((BallStateF[0] - xD)/12,4))
     print('dy after decision point (ft)----------', to_precision((BallStateF[1] - yD)/12,4))
     print('dz after decision point (ft)----------', to_precision((BallStateF[2] - zD)/12,4))
-    
+
     print('\n\nTotals:')
     print('flight time (t)-----------------------', to_precision(t,4))
     print('Vertical break (in)-------------------', to_precision(vBreak*12,4))
     print('Horizontal break (in)-----------------', to_precision(hBreak*12,4))
     print('Number of Revolutions-----------------', to_precision(totalRotations*t,4))
-    
-    positions = [xP,yP,zP,x0,y0,z0,xD,yD,zD,xF,yF,zF]
-    
-    return positions
 
-def TiltToTime(Tilt):
+    positions = [xP,yP,zP,x0,y0,z0,xD,yD,zD,xF,yF,zF]
+
+    return positions
     
-    TiltTime = (((Tilt)%360)/360)*12    
+###############################################################################    
+    
+def TiltToTime(Tilt):
+
+    TiltTime = (((Tilt)%360)/360)*12
     Hrs = int(TiltTime)
     if Hrs == 0:
         Hrs = 12
     mins = int(TiltTime*60)%60
     return(Hrs,mins)
+    
+###############################################################################    
     
 def TimeToTilt(Hrs, mins):
     """
@@ -228,45 +353,48 @@ def TimeToTilt(Hrs, mins):
     radmins = (mins*np.pi/360)
     return(radHrs + radmins)
     
-
-def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, angle1, angle2):
+###############################################################################    
+    
+def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle):
     """
     This function is designed merely to generate the balls initial conditions
     It will take various options and output x0,y0,z0,u0,v0,w0,Spinx0,\
-    Spiny0,Spinz0,angle1,angle2 angle 1 and angle 2 are for seam effects
+    Spiny0,Spinz0,Yangle,Zangle angle 1 and angle 2 are for seam effects
     """
-    
+
     Theta = Theta*np.pi/180
     Psi = Psi*np.pi/180
-    
+
     uvmag = Vtot*np.cos(Theta)
     w0 = Vtot*np.sin(Theta)
 
     u0 = -uvmag*np.sin(Psi)
     v0 = uvmag*np.cos(Psi)
-    
+
     Tilt = (Tilt) # rad tilt
     Gyro = (Gyro) # rad gyro
-    
+
     Spinx0 = SpinRate*np.sin(Gyro)*np.sin(Tilt)
     Spiny0 = SpinRate*np.cos(Gyro)
     Spinz0 = -SpinRate*np.sin(Gyro)*np.cos(Tilt)
-    angle1 = 0
-    angle2 = 0
-    
+#    Yangle = 0
+#    Zangle = 0
+
     print('\nu:',u0,'\nv:',v0,'\nw:',w0)
     print('\nSpinx0:',Spinx0,'\nSpiny0:',Spiny0,'\nSpinz0:',Spinz0)
 
-    FullState = [u0,v0,w0,Spinx0,Spiny0,Spinz0,angle1,angle2]
+    FullState = [u0,v0,w0,Spinx0,Spiny0,Spinz0,Yangle,Zangle]
     return FullState
+    
+###############################################################################    
     
 def derivs(t, BallState, BallConsts):
     """
     This is where the magic happens all models are input here
     """
-    
+
     dy = np.zeros(len(BallState))
-    
+
     u = BallState[3]
     v = BallState[4]
     w = BallState[5]
@@ -274,36 +402,36 @@ def derivs(t, BallState, BallConsts):
     Spiny = BallState[7]
     Spinz = BallState[8]#rad/sec
     VelTot = np.sqrt(u**2 + v**2 + w**2)
-    
+
     SpinRate = np.sqrt(Spinx**2 + Spiny**2 + Spinz**2)
     diameter = BallConsts[1] #ft
     c0 = BallConsts[4]
-    
+
     rw = (diameter/2)*SpinRate
     S = (rw/VelTot)*np.exp(-t/10000) #the "np.exp(-t/NUM) is for spin decay
     #for no spin decay NUM should be large. When better data is available on
     #spin decay will account for it here likely
-    
+
     Cl = ClCross(S)
 #    Cl = ClKensrud(S) This is not right yet
     CdConst = 0.33
-    
+
     aDragx = -c0*CdConst*VelTot*u
     aDragy = -c0*CdConst*VelTot*v
     aDragz = -c0*CdConst*VelTot*w
-    
+
     aSpinx = c0*(Cl/SpinRate)*VelTot*(Spiny*w - Spinz*v)
     aSpiny = c0*(Cl/SpinRate)*VelTot*(Spinz*u - Spinx*w)
     aSpinz = c0*(Cl/SpinRate)*VelTot*(Spinx*v - Spiny*u)
-    
+
     ax = aDragx + aSpinx
     ay = aDragy + aSpiny
     az = aDragz + aSpinz - 32.2
-    
+
     dSpinx = 0
     dSpiny = 0
     dSpinz = 0
-    
+
     dy[0] = u
     dy[1] = v
     dy[2] = w
@@ -313,19 +441,25 @@ def derivs(t, BallState, BallConsts):
     dy[6] = dSpinx
     dy[7] = dSpiny
     dy[8] = dSpinz
-    
-    return dy
 
+    return dy
+    
+###############################################################################    
+    
 def ClKensrud(S):
-    """ S is the spin factor calulated above, Not in UMBA1.0 Some changes 
-    need ot be made before this will work 
+    """ S is the spin factor calulated above, Not in UMBA1.0 Some changes
+    need ot be made before this will work
     """
     return (1.1968*np.log(abs(S) + 4.7096))
-
-def ClCross(S):
     
-    return (1/(2.32 + (0.4/S)))
+###############################################################################    
+    
+def ClCross(S):
 
+    return (1/(2.32 + (0.4/S)))
+    
+###############################################################################    
+    
 def to_precision(x,p):
     """
     returns a string representation of x formatted with a precision of p
@@ -384,35 +518,37 @@ def to_precision(x,p):
         out.append(m)
 
     return "".join(out)
-
+    
+###############################################################################    
+    
 def RK4(t0,y0,dt,BallConsts):
-    
+
     n = len(y0)
-    
+
     k1 = np.zeros(n)
     k2 = np.zeros(n)
     k3 = np.zeros(n)
     k4 = np.zeros(n)
-    
+
     ym = np.zeros(n)
     ye = np.zeros(n)
     y = np.zeros(n)
     slope = np.zeros(n)
-    
+
     k1 = derivs(t0,y0, BallConsts)
     ym = y0 + (k1*dt*0.5)
-    
+
     k2 = derivs(t0+dt*0.5, ym, BallConsts)
     ym = y0 + k2*dt*0.5
-    
+
     k3 = derivs(t0+dt*0.5,ym, BallConsts)
     ye = y0 + k3*dt
-    
-    
+
+
     k4 = derivs(t0+dt, ye, BallConsts)
-    
+
     slope = (k1 + 2*(k2+k3) + k4)/6.0
-    
+
     y = y0 + slope*dt
-    
+
     return y
