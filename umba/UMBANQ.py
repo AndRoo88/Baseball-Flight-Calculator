@@ -2,6 +2,8 @@ import numpy as np
 import plotting
 import processing
 
+# to run a pitch simulation insert values into lines 112 through 124
+
 
 def umba(x,y,z,Vtot,Theta, Psi, SpinRate, TiltH, Tiltm, SpinE, Yang, Zang, LorR):
     """
