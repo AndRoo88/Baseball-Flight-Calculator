@@ -2,189 +2,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import math
 import plotting
-import time
+#import time
 
-
-def initializeSeam():
-    """
-    This function defines the seams of a baseball. It is
-    based, in large extant, on the work from
-    http://www.darenscotwilson.com/spec/bbseam/bbseam.html
-    """
-    n = 108 #number of points were calculating on the seam line
-    alpha = np.linspace(0,np.pi*2,n)
-    x = np.zeros(len(alpha))
-    y = np.zeros(len(alpha))
-    z = np.zeros(len(alpha))
-    R = (2 + 15/16.)/2
-    for i in range(len(alpha)):
-
-        x[i] = ((1/13)*R*((9*np.cos(alpha[i]) - 4*np.cos(3*alpha[i]))))
-        y[i] = ((1/13)*R*((9*np.sin(alpha[i]) + 4*np.sin(3*alpha[i]))))
-        z[i] = ((12/13)*R*np.cos(2*alpha[i]))
-
-    return x,y,z
-
-###############################################################################
-
-def rotateSeam(x, y, z, Spinx,Spiny,Spinz,dt):
-    """
-    takes an initial seam orientation calculates new seam positions based on
-    a cartesian spin rate vector. A rotation vecotr is calculated based on the
-    spin rate vector and the time step.
-    """
-    xn = np.zeros(len(x))
-    yn = np.zeros(len(y))
-    zn = np.zeros(len(z))
-    RotVec = [Spinx*dt,Spiny*dt,Spinz*dt]
-    r = R.from_rotvec(RotVec)
-    for i in range(len(x)):
-        vec = [x[i],y[i],z[i]]
-        vecN = r.apply(vec)
-        xn[i] = vecN[0]
-        yn[i] = vecN[1]
-        zn[i] = vecN[2]
-
-    return(xn,yn,zn)
-
-###############################################################################
-
-def findRotVec(sx0,sy0,sz0, sx1,sy1,sz1):
-    SpinVecMag0 = np.sqrt(sx0**2 + sy0**2 + sz0**2)
-    if SpinVecMag0 == 0:
-        return(0,0,0)
-    s = (3,3)
-    RM = np.zeros(s)
-
-    nx0 = sx0/(SpinVecMag0)
-    ny0 = sy0/(SpinVecMag0)
-    nz0 = sz0/(SpinVecMag0)
-
-    nvec0 = [nx0,ny0,nz0]
-
-
-    SpinVecMag1 = np.sqrt(sx1**2 + sy1**2 + sz1**2)
-
-    nx1 = sx1/(SpinVecMag1)
-    ny1 = sy1/(SpinVecMag1)
-    nz1 = sz1/(SpinVecMag1)
-
-    nvec1 = [nx1,ny1,nz1]
-
-    axis = np.cross(nvec0, nvec1)
-    axisLength = np.sqrt(axis[0]**2 + axis[1]**2 + axis[2]**2)
-    if axisLength != 0:
-        axis = axis/axisLength
-
-    x = axis[0]
-    y = axis[1]
-    z = axis[2]
-
-    angle = np.arccos(np.dot(nvec0,nvec1))
-
-    ca = np.cos(angle)
-    sa = np.sin(angle)
-
-
-    RM[0,0] = 1.0 + (1.0 - ca)*(x**2 - 1.0)
-    RM[0,1] = -z*sa + (1.0 - ca)*x*y
-    RM[0,2] = y*sa + (1.0 - ca)*x*z
-    RM[1,0] = z*sa+(1.0 - ca)*x*y
-    RM[1,1] = 1.0 + (1.0 - ca)*(y**2 - 1.0)
-    RM[1,2] = -x*sa+(1.0 - ca)*y*z
-    RM[2,0] = -y*sa+(1.0 - ca)*x*z
-    RM[2,1] = x*sa+(1.0 - ca)*y*z
-    RM[2,2] = 1.0 + (1.0 - ca)*(z**2 - 1.0)
-
-    r = R.from_dcm(RM)
-    V = R.as_rotvec(r)
-#    i(V)
-    return(V)
-
-###############################################################################
-
-def findSSWseams(VelVec,seamPoints,SpinVec, t):
-    """
-    VelVec is the an array of the velocities u, v, w
-    seamPoints is an array of the seam locations with location (0,0,0) being
-    the ball's center.
-
-    This function calculates which of the seams are inside a volume whose
-    corners are called nodes. The nodes are determined by the normalPlane
-    funtion
-
-    Function outputs:
-    innerPoints which are the points inside the volume,
-    outerPoints which are the points outside the volume,(mostly for plotting)
-    and the node points (mostly for plotting)
-    """
-    nodes = normalPlane(VelVec,SpinVec,t)
-    seamPoints = np.transpose(seamPoints)
-    innerPointsIndex = (inside_test(seamPoints,nodes))
-
-    innerPoints = []
-    outerPoints = []
-    for i in range(len(seamPoints)):
-        if i in innerPointsIndex:
-            outerPoints.append(seamPoints[i])
-        else:
-            active = activeTest(VelVec, seamPoints, i)
-            if active == True:
-                innerPoints.append(seamPoints[i])
-            else:
-                outerPoints.append(seamPoints[i])
-    innerPoints = np.asarray(innerPoints)
-    outerPoints = np.asarray(outerPoints)
-
-#    inlineTest(VelVec,innerPoints)
-    #just to check
-#    plotting.plotPointsTest(innerPoints,outerPoints,nodes)
-    return innerPoints,outerPoints,nodes
-
-###############################################################################
-
-def activeTest(VelVec,seamPoints, i):
-    """
-    since seams in the activation region cannot cause a separated flow to
-    become separated again this function will eliminate any inline seams
-    """
-
-    AACUrrent = seamPoints[i]
-    unit_vector_V = VelVec / np.linalg.norm(VelVec)
-
-    if i  > 0:
-        seamLineVecD = seamPoints[i] - seamPoints[i-1]
-        unit_vector_Sd = seamLineVecD / np.linalg.norm(seamLineVecD)
-        dot_productd = np.dot(unit_vector_Sd, unit_vector_V)
-        angled = np.arccos(dot_productd)*180/np.pi
-    else:
-        seamLineVecD = seamPoints[i] - seamPoints[107]
-        unit_vector_Sd = seamLineVecD / np.linalg.norm(seamLineVecD)
-        dot_productd = np.dot(unit_vector_Sd, unit_vector_V)
-        angled = np.arccos(dot_productd)*180/np.pi
-
-    if i < (107):
-        seamLineVecU = seamPoints[i+1] - seamPoints[i]
-        unit_vector_Su = seamLineVecD / np.linalg.norm(seamLineVecU)
-        dot_productu = np.dot(unit_vector_Su, unit_vector_V)
-        angleu = np.arccos(dot_productu)*180/np.pi
-    else:
-        seamLineVecU = seamPoints[0] - seamPoints[i]
-        unit_vector_Su = seamLineVecD / np.linalg.norm(seamLineVecU)
-        dot_productu = np.dot(unit_vector_Su, unit_vector_V)
-        angleu = np.arccos(dot_productu)*180/np.pi
-
-    if angled > 90:
-        angled = angled - 180
-    if angleu > 90:
-        angleu = angleu - 180
-
-    if abs(angleu) < 35 or abs(angleu) < 35: # or (np.linalg.norm(seamLineVecNU)) > 0.15
-        return False
-    else:
-        return True
-
-###############################################################################
 
 def normalPlane(VelVec,SpinVecT,t):
     """
@@ -197,9 +16,11 @@ def normalPlane(VelVec,SpinVecT,t):
     However, htis portion of code is only to find the range.
     """
 
+    SpinVecTNew = np.zeros([3])
     SpinVecTMag = np.linalg.norm(SpinVecT)
     SpinVecTUnit = SpinVecT/SpinVecTMag
-    SpinShiftFactor = -.046*SpinVecTMag #this number effects how much the separation location
+    dt = 0.001
+    SpinShiftFactor = 1.25 #this number effects how much the separation location
                             #Will change based on the spin rate. Bigger, Move shift
     forwardBackV = 0. # allows for the moving the effectiveness of the seams
     # forwards or backwards.
@@ -229,57 +50,32 @@ def normalPlane(VelVec,SpinVecT,t):
     nodes0 = np.asarray([node10, node20, node30, node40, node50, node60, node70, node80])
 
     VRotVec = findRotVec(0, -1., 0, VelVec[0], VelVec[1], VelVec[2])
-    SpinVecTUnit[0] = SpinVecTUnit[0] * SpinShiftFactor
-    SpinVecTUnit[1] = SpinVecTUnit[1] * SpinShiftFactor
-    SpinVecTUnit[2] = SpinVecTUnit[2] * SpinShiftFactor
+    SpinVecTNew[0] = SpinVecT[0] * SpinShiftFactor * dt
+    SpinVecTNew[1] = SpinVecT[1] * SpinShiftFactor * dt
+    SpinVecTNew[2] = SpinVecT[2] * SpinShiftFactor * dt
 
     r = R.from_rotvec(VRotVec)
-    rr = R.from_rotvec(SpinVecTUnit)
+    rr = R.from_rotvec(SpinVecTNew)
     nodes1 = r.apply(nodes0)
     nodes2 = rr.apply(nodes1)
 #    print(nodes1-nodes2)
 
+#    x0check = nodes0[0,0]
+#    y0check = nodes0[0,1]
+#    v1 = [x0check,y0check]
+#
+#    x2check = nodes2[0,0]
+#    y2check = nodes2[0,1]
+#    v2 = [x2check,y2check]
+
+#    cosang = np.dot(v1, v2)
+#    sinang = np.linalg.norm(np.cross(v1, v2))
+#    angle = (np.arctan2(sinang, cosang))
+#    print(angle*180/np.pi)
+#    print(x0check, y0check, '\n', x2check, y2check)
+
+#    print(np.arctan2(nodes2[1],nodes2[0])*180/np.pi)
     return (nodes2)
-
-###############################################################################
-
-def inside_test(points , cube3d):
-    """
-    cube3d  =  numpy array of the shape (8,3) with coordinates in the clockwise order. first the bottom plane is considered then the top one.
-    points = array of points with shape (N, 3).
-
-    Returns the indices of the points array which are outside the cube3d
-    """
-    b1 = cube3d[0]
-    b2 = cube3d[1]
-#    b3 = cube3d[2]
-    b4 = cube3d[3]
-    t1 = cube3d[4]
-#    t2 = cube3d[5]
-    t3 = cube3d[6]
-#    t4 = cube3d[7]
-
-    dir1 = (t1-b1)
-    size1 = np.linalg.norm(dir1)
-    dir1 = dir1 / size1
-
-    dir2 = (b2-b1)
-    size2 = np.linalg.norm(dir2)
-    dir2 = dir2 / size2
-
-    dir3 = (b4-b1)
-    size3 = np.linalg.norm(dir3)
-    dir3 = dir3 / size3
-
-    cube3d_center = (b1 + t3)/2.0
-
-    dir_vec = points - cube3d_center
-
-    res1 = np.where( (np.absolute(np.dot(dir_vec, dir1)) * 2) > size1 )[0]
-    res2 = np.where( (np.absolute(np.dot(dir_vec, dir2)) * 2) > size2 )[0]
-    res3 = np.where( (np.absolute(np.dot(dir_vec, dir3)) * 2) > size3 )[0]
-
-    return list( set().union(res1, res2, res3) )
 
 ###############################################################################
 
@@ -493,7 +289,7 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
 #                activeSeams0, inactiveSeams0, nodes0 = findSSWseams(VelVec,seamPoints0,SpinVec,t)
 #                plotting.plotSeams(activeSeams0, inactiveSeams0, Spinx0, Spiny0, Spinz0, 0, VelVec,nodes)
 #                time.sleep(10)
-            if t % frameRate > -0.0000001 and t % frameRate < 0.0000001 and (SpinRate0*t) < np.pi*2 and t <= .101:# and SpinRate0 > 100:
+            if t % frameRate > -0.0000001 and t % frameRate < 0.0000001 and (SpinRate0*t) < np.pi*.2 and t <= .0501:# and SpinRate0 > 100:
                 plotting.plotSeams(activeSeams, inactiveSeams, Spinx0, Spiny0, Spinz0, t, VelVec, nodes)
         else:
             activeSeams = [0,0,0]
@@ -682,6 +478,227 @@ def anglesTOCart(Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle):
 
     FullState = [u0,v0,w0,Spinx0,Spiny0,Spinz0,Yangle,Zangle]
     return FullState
+
+###############################################################################
+
+def findSSWseams(VelVec,seamPoints,SpinVec, t):
+    """
+    VelVec is the an array of the velocities u, v, w
+    seamPoints is an array of the seam locations with location (0,0,0) being
+    the ball's center.
+
+    This function calculates which of the seams are inside a volume whose
+    corners are called nodes. The nodes are determined by the normalPlane
+    funtion
+
+    Function outputs:
+    innerPoints which are the points inside the volume,
+    outerPoints which are the points outside the volume,(mostly for plotting)
+    and the node points (mostly for plotting)
+    """
+    nodes = normalPlane(VelVec,SpinVec,t)
+    seamPoints = np.transpose(seamPoints)
+    innerPointsIndex = (inside_test(seamPoints,nodes))
+
+    innerPoints = []
+    outerPoints = []
+    for i in range(len(seamPoints)):
+        if i in innerPointsIndex:
+            outerPoints.append(seamPoints[i])
+        else:
+            active = activeTest(VelVec, seamPoints, i)
+            if active == True:
+                innerPoints.append(seamPoints[i])
+            else:
+                outerPoints.append(seamPoints[i])
+    innerPoints = np.asarray(innerPoints)
+    outerPoints = np.asarray(outerPoints)
+
+#    inlineTest(VelVec,innerPoints)
+    #just to check
+#    plotting.plotPointsTest(innerPoints,outerPoints,nodes)
+    return innerPoints,outerPoints,nodes
+
+###############################################################################
+
+def inside_test(points , cube3d):
+    """
+    cube3d  =  numpy array of the shape (8,3) with coordinates in the clockwise order. first the bottom plane is considered then the top one.
+    points = array of points with shape (N, 3).
+
+    Returns the indices of the points array which are outside the cube3d
+    """
+    b1 = cube3d[0]
+    b2 = cube3d[1]
+#    b3 = cube3d[2]
+    b4 = cube3d[3]
+    t1 = cube3d[4]
+#    t2 = cube3d[5]
+    t3 = cube3d[6]
+#    t4 = cube3d[7]
+
+    dir1 = (t1-b1)
+    size1 = np.linalg.norm(dir1)
+    dir1 = dir1 / size1
+
+    dir2 = (b2-b1)
+    size2 = np.linalg.norm(dir2)
+    dir2 = dir2 / size2
+
+    dir3 = (b4-b1)
+    size3 = np.linalg.norm(dir3)
+    dir3 = dir3 / size3
+
+    cube3d_center = (b1 + t3)/2.0
+
+    dir_vec = points - cube3d_center
+
+    res1 = np.where( (np.absolute(np.dot(dir_vec, dir1)) * 2) > size1 )[0]
+    res2 = np.where( (np.absolute(np.dot(dir_vec, dir2)) * 2) > size2 )[0]
+    res3 = np.where( (np.absolute(np.dot(dir_vec, dir3)) * 2) > size3 )[0]
+
+    return list( set().union(res1, res2, res3) )
+
+###############################################################################
+
+def activeTest(VelVec,seamPoints, i):
+    """
+    since seams in the activation region cannot cause a separated flow to
+    become separated again this function will eliminate any inline seams
+    """
+
+    AACUrrent = seamPoints[i]
+    unit_vector_V = VelVec / np.linalg.norm(VelVec)
+
+    if i  > 0:
+        seamLineVecD = seamPoints[i] - seamPoints[i-1]
+        unit_vector_Sd = seamLineVecD / np.linalg.norm(seamLineVecD)
+        dot_productd = np.dot(unit_vector_Sd, unit_vector_V)
+        angled = np.arccos(dot_productd)*180/np.pi
+    else:
+        seamLineVecD = seamPoints[i] - seamPoints[107]
+        unit_vector_Sd = seamLineVecD / np.linalg.norm(seamLineVecD)
+        dot_productd = np.dot(unit_vector_Sd, unit_vector_V)
+        angled = np.arccos(dot_productd)*180/np.pi
+
+    if i < (107):
+        seamLineVecU = seamPoints[i+1] - seamPoints[i]
+        unit_vector_Su = seamLineVecD / np.linalg.norm(seamLineVecU)
+        dot_productu = np.dot(unit_vector_Su, unit_vector_V)
+        angleu = np.arccos(dot_productu)*180/np.pi
+    else:
+        seamLineVecU = seamPoints[0] - seamPoints[i]
+        unit_vector_Su = seamLineVecD / np.linalg.norm(seamLineVecU)
+        dot_productu = np.dot(unit_vector_Su, unit_vector_V)
+        angleu = np.arccos(dot_productu)*180/np.pi
+
+    if angled > 90:
+        angled = angled - 180
+    if angleu > 90:
+        angleu = angleu - 180
+
+    if abs(angleu) < 35 or abs(angleu) < 35: # or (np.linalg.norm(seamLineVecNU)) > 0.15
+        return False
+    else:
+        return True
+
+###############################################################################
+
+def initializeSeam():
+    """
+    This function defines the seams of a baseball. It is
+    based, in large extant, on the work from
+    http://www.darenscotwilson.com/spec/bbseam/bbseam.html
+    """
+    n = 108 #number of points were calculating on the seam line
+    alpha = np.linspace(0,np.pi*2,n)
+    x = np.zeros(len(alpha))
+    y = np.zeros(len(alpha))
+    z = np.zeros(len(alpha))
+    R = (2 + 15/16.)/2
+    for i in range(len(alpha)):
+
+        x[i] = ((1/13)*R*((9*np.cos(alpha[i]) - 4*np.cos(3*alpha[i]))))
+        y[i] = ((1/13)*R*((9*np.sin(alpha[i]) + 4*np.sin(3*alpha[i]))))
+        z[i] = ((12/13)*R*np.cos(2*alpha[i]))
+
+    return x,y,z
+
+###############################################################################
+
+def rotateSeam(x, y, z, Spinx,Spiny,Spinz,dt):
+    """
+    takes an initial seam orientation calculates new seam positions based on
+    a cartesian spin rate vector. A rotation vecotr is calculated based on the
+    spin rate vector and the time step.
+    """
+    xn = np.zeros(len(x))
+    yn = np.zeros(len(y))
+    zn = np.zeros(len(z))
+    RotVec = [Spinx*dt,Spiny*dt,Spinz*dt]
+    r = R.from_rotvec(RotVec)
+    for i in range(len(x)):
+        vec = [x[i],y[i],z[i]]
+        vecN = r.apply(vec)
+        xn[i] = vecN[0]
+        yn[i] = vecN[1]
+        zn[i] = vecN[2]
+
+    return(xn,yn,zn)
+
+###############################################################################
+
+def findRotVec(sx0,sy0,sz0, sx1,sy1,sz1):
+    SpinVecMag0 = np.sqrt(sx0**2 + sy0**2 + sz0**2)
+    if SpinVecMag0 == 0:
+        return(0,0,0)
+    s = (3,3)
+    RM = np.zeros(s)
+
+    nx0 = sx0/(SpinVecMag0)
+    ny0 = sy0/(SpinVecMag0)
+    nz0 = sz0/(SpinVecMag0)
+
+    nvec0 = [nx0,ny0,nz0]
+
+
+    SpinVecMag1 = np.sqrt(sx1**2 + sy1**2 + sz1**2)
+
+    nx1 = sx1/(SpinVecMag1)
+    ny1 = sy1/(SpinVecMag1)
+    nz1 = sz1/(SpinVecMag1)
+
+    nvec1 = [nx1,ny1,nz1]
+
+    axis = np.cross(nvec0, nvec1)
+    axisLength = np.sqrt(axis[0]**2 + axis[1]**2 + axis[2]**2)
+    if axisLength != 0:
+        axis = axis/axisLength
+
+    x = axis[0]
+    y = axis[1]
+    z = axis[2]
+
+    angle = np.arccos(np.dot(nvec0,nvec1))
+
+    ca = np.cos(angle)
+    sa = np.sin(angle)
+
+
+    RM[0,0] = 1.0 + (1.0 - ca)*(x**2 - 1.0)
+    RM[0,1] = -z*sa + (1.0 - ca)*x*y
+    RM[0,2] = y*sa + (1.0 - ca)*x*z
+    RM[1,0] = z*sa+(1.0 - ca)*x*y
+    RM[1,1] = 1.0 + (1.0 - ca)*(y**2 - 1.0)
+    RM[1,2] = -x*sa+(1.0 - ca)*y*z
+    RM[2,0] = -y*sa+(1.0 - ca)*x*z
+    RM[2,1] = x*sa+(1.0 - ca)*y*z
+    RM[2,2] = 1.0 + (1.0 - ca)*(z**2 - 1.0)
+
+    r = R.from_dcm(RM)
+    V = R.as_rotvec(r)
+#    i(V)
+    return(V)
 
 ###############################################################################
 
