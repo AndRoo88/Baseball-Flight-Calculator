@@ -2,6 +2,8 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
+#This older version does not contain the SSW model but may still be 
+#useful for comparision
 
 def main():
         
