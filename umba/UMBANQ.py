@@ -62,7 +62,7 @@ for i in range(iters):
     """
     # all the variables below are at release
     x = 0 #initial x ft
-    y = -110 #initial y location  ft
+    y = 5.5 #initial y location  ft
     z = 6 #initial z location ft
     v = 75 #initial velocity  mph
     vRelAng = 15 #initial vertical release angle deg
@@ -73,7 +73,7 @@ for i in range(iters):
     eff = 100 #efficiency as a percentage
     Yang = 0 #initial seam orientation y angle
     Zang = variable[i] #initial seam orientation z angle
-    LorR = 'l' #if efficiency is less than 100% which poll should be forward l or r
+    LorR = 'r' #if efficiency is less than 100% which poll should be forward l or r
 
     positions = processing.umba(x,y,z,v,vRelAng,hRelAng,rpm,tHrs,tMin,eff,Yang,Zang,LorR, i)
 
