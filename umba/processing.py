@@ -4,7 +4,83 @@ import math
 import plotting
 #import time
 
+def umba(x,y,z,Vtot,Theta, Psi, SpinRate, TiltH, Tiltm, SpinE, Yang, Zang, LorR, i):
+    """
 
+    The inputs are:
+        x,
+        y,
+        z,
+        Initial Ball Speed,
+        vertical release angle,
+        horizontal release angle,
+        Spin Rate,
+        Tilt in Hours,
+        Tilt in minutes,
+        Spin Efficiency,
+        Y seam orientation angle,
+        Z seam orientation angle,
+        
+        
+        
+        
+    Primay inputs are: initial position, x0, y0, and z0 with origin at the
+    point of home plate, x to the rright of the catcher, y from the catcher
+    towards the pitcher, and z straight up. Initial velocities
+    u0, v0, and w0 which are the speeds of the ball in x, y, and z
+    respectivley. And spin rates
+
+
+   UMBA1.0: This code uses a constant Cd and rod cross's model for CL
+   Predictions. Seam Orientation is not accounted for. Air Density is
+   considered only at sea level at 60% relative humidity. but can be easily
+   altered
+
+   UMBA2.0 Adding seam positions and attempting to model CL from seams.
+   """
+
+    Yang = (Yang) * np.pi/180
+    Zang = -Zang * np.pi/180
+
+    seamsOn = True
+    frameRate = 0.002
+
+
+
+    Tilt = TimeToTilt(TiltH, Tiltm)
+    if LorR == 'l':
+        Gyro = np.arcsin(SpinE/100)
+    elif LorR =='r':
+        Gyro = np.pi - np.arcsin(SpinE/100)
+    else:
+        while LorR != 'l' or LorR != 'r':
+            if LorR == 'l':
+                Gyro = np.arcsin(SpinE/100)
+            elif LorR =='r':
+                Gyro = np.pi - np.arcsin(SpinE/100)
+            else:
+                LorR = input('please type in an "l" or an "r" for which pole goes forward')
+
+    positions = (PitchedBallTraj(x, y, z, Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yang, Zang, i, frameRate, seamsOn))
+    plotting.Plotting(positions)
+
+    pX = (positions[0])
+    pY = (positions[1])
+    pZ = (positions[2])
+    IX = (positions[3])
+    IY = (positions[4])
+    IZ = (positions[5])
+    DX = (positions[6])
+    DY = (positions[7])
+    DZ = (positions[8])
+    FX = (positions[9])
+    FY = (positions[10])
+    FZ = (positions[11])
+
+    return(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ)
+    
+###############################################################################
+    
 def normalPlane(VelVec,SpinVecT,t):
     """
     finds an acceptable range of seam locations where they can have an affect
@@ -17,18 +93,18 @@ def normalPlane(VelVec,SpinVecT,t):
     """
 
     SpinVecTNew = np.zeros([3])
-    SpinVecTMag = np.linalg.norm(SpinVecT)
-    SpinVecTUnit = SpinVecT/SpinVecTMag
+#    SpinVecTMag = np.linalg.norm(SpinVecT)
+#    SpinVecTUnit = SpinVecT/SpinVecTMag
     dt = 0.001
-    SpinShiftFactor = 1.25 #this number effects how much the separation location
+    SpinShiftFactor = 1.5 #this number effects how much the separation location
                             #Will change based on the spin rate. Bigger, Move shift
-    forwardBackV = 0. # allows for the moving the effectiveness of the seams
+    forwardBackV = 0.21 # allows for the moving the effectiveness of the seams
     # forwards or backwards.
 
     AngleOfActivation = 5
 
     diameter = (2. + 15/16) #in
-    acceptableRange = diameter*1.1
+    acceptableRange = diameter*1.05
     acceptableThickness = diameter/2*np.sin(AngleOfActivation*2*np.pi/180)
 #
     #produces a 3d box
@@ -120,7 +196,7 @@ def derivs(t, BallState, BallConsts, activeSeams):
 
     # The coefficient of Seams "Cseams" is the essentially the Lift coeficient
     # per seam per length away from the origin.
-    Cseams = .02 #per active seam
+    Cseams = .021 #per active seam
 
     aDragx = -c0*CdConst*VelTot*u
     aDragy = -c0*CdConst*VelTot*v
@@ -151,6 +227,8 @@ def derivs(t, BallState, BallConsts, activeSeams):
     ay = aDragy + aSpiny + aSeamsy
     az = aDragz + aSpinz + aSeamsz - 32.2
 
+#    print az
+
     dSpinx = 0
     dSpiny = 0
     dSpinz = 0
@@ -164,7 +242,6 @@ def derivs(t, BallState, BallConsts, activeSeams):
     dy[6] = dSpinx
     dy[7] = dSpiny
     dy[8] = dSpinz
-
     return dy
 
 ###############################################################################
@@ -243,18 +320,24 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
     Vel = [u0,v0,w0]
     VelTot = np.sqrt(u0**2 + v0**2 + w0**2)
     SpinRate0 = np.sqrt(Spinx0**2 + Spiny0**2 + Spinz0**2)
-    SpinEfficiency0 = 1-abs(np.dot(Vel, SpinVec)/(SpinRate0*VelTot))
+#    SpinEfficiency0 = 1-abs(np.dot(Vel, SpinVec)/(SpinRate0*VelTot))
+    unit_vector_1 = Vel / np. linalg. norm(Vel)
+    unit_vector_2 = SpinVec / np. linalg. norm(SpinVec)
+    dot_product = np. dot(unit_vector_1, unit_vector_2)
+    Gangle = np. arccos(dot_product)
+#    SpinEfficiency0 = 1 - Gangle/(np.pi/2)
+    SpinEfficiency0 = np.sin(Gangle)
     #assumes that the efficiency is non-linear and that it follows the sin of the
     #angle between the ball direction and the spin.
 
-
+    ax, ay, az = 0, 0, 0
     BallState0 = [x0,y0,z0,u0,v0,w0,Spinx0,Spiny0,Spinz0]
 
     fileBT = open(str(i) + "BallTrajectoryNEW.txt","w+")
-    fileBT.write("time        x        y         z          u            v       w      Spin x     Spin y    Spin z\n")
-    fileBT.write("==================================================================================================\n")
-    fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
-                 .format(t,x0,y0,z0,u0,v0,w0,Spinx0,Spiny0,Spinz0))
+    fileBT.write("time        x        y         z          u            v       w      Spin x     Spin y    Spin z     ax       ay       az\n")
+    fileBT.write("===============================================================================================================================\n")
+    fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
+                 .format(t,x0,y0,z0,u0,v0,w0,Spinx0,Spiny0,Spinz0,ax,ay,az))
 
     xP = []
     yP = []
@@ -289,7 +372,7 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
 #                activeSeams0, inactiveSeams0, nodes0 = findSSWseams(VelVec,seamPoints0,SpinVec,t)
 #                plotting.plotSeams(activeSeams0, inactiveSeams0, Spinx0, Spiny0, Spinz0, 0, VelVec,nodes)
 #                time.sleep(10)
-            if t % frameRate > -0.0000001 and t % frameRate < 0.0000001 and (SpinRate0*t) < np.pi*.2 and t <= .0501:# and SpinRate0 > 100:
+            if t % frameRate > -0.0000001 and t % frameRate < 0.0000001 and (SpinRate0*t) < np.pi*2 and t <= .0501:# and SpinRate0 > 100:
                 plotting.plotSeams(activeSeams, inactiveSeams, Spinx0, Spiny0, Spinz0, t, VelVec, nodes)
         else:
             activeSeams = [0,0,0]
@@ -297,12 +380,12 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
 #         # the seams are moving
 
 
-        BallState1 = RK4(t, BallState0, dt, BallConsts, activeSeams)
+        BallState1,slope = RK4(t, BallState0, dt, BallConsts, activeSeams)
 
 #            plotting.plotPointsTest(activeSeams, inactiveSeams, nodes,t)
 
-        fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
-                 .format(t,BallState1[0],BallState1[1],BallState1[2],BallState1[3],BallState1[4],BallState1[5],BallState1[6],BallState1[7],BallState1[8]))
+        fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
+                 .format(t,BallState1[0],BallState1[1],BallState1[2],BallState1[3],BallState1[4],BallState1[5],BallState1[6],BallState1[7],BallState1[8], slope[3], slope[4], slope[5]))
 
         BallState0 = BallState1
 
@@ -313,6 +396,8 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
         vP.append(BallState1[4])
         wP.append(BallState1[5])
         t = t + dt
+
+#    fileBT.close()
 
     DecisionPointStep = int(t - (.2/dt))
     if t < decisionPoint:
@@ -348,7 +433,14 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
     VelF = [BallStateF[3],BallStateF[4],BallStateF[5]]
     VelTotF = np.sqrt(BallStateF[3]**2 + BallStateF[4]**2 + BallStateF[5]**2)
     SpinRateF = np.sqrt(BallStateF[6]**2 + BallStateF[7]**2 + BallStateF[8]**2)
-    SpinEfficiencyF = 1-abs(np.dot(VelF, SpinVecF)/(SpinRateF*VelTotF))
+#    SpinEfficiencyF = 1-abs(np.dot(VelF, SpinVecF)/(SpinRateF*VelTotF))
+
+    unit_vector_1 = VelF / np. linalg. norm(VelF)
+    unit_vector_2 = SpinVecF / np. linalg. norm(SpinVecF)
+    dot_product = np. dot(unit_vector_1, unit_vector_2)
+    Gangle = np. arccos(dot_product)
+#    SpinEfficiency0 = 1 - Gangle/(np.pi/2)
+    SpinEfficiencyF = np.sin(Gangle)
 
     totalRotations = SpinRateF/(2*np.pi) #assumes no spin decay
 
@@ -567,8 +659,9 @@ def activeTest(VelVec,seamPoints, i):
     become separated again this function will eliminate any inline seams
     """
 
-    AACUrrent = seamPoints[i]
+#    AACUrrent = seamPoints[i]
     unit_vector_V = VelVec / np.linalg.norm(VelVec)
+    nuSeams = len(seamPoints)
 
     if i  > 0:
         seamLineVecD = seamPoints[i] - seamPoints[i-1]
@@ -576,12 +669,12 @@ def activeTest(VelVec,seamPoints, i):
         dot_productd = np.dot(unit_vector_Sd, unit_vector_V)
         angled = np.arccos(dot_productd)*180/np.pi
     else:
-        seamLineVecD = seamPoints[i] - seamPoints[107]
+        seamLineVecD = seamPoints[i] - seamPoints[nuSeams-1]
         unit_vector_Sd = seamLineVecD / np.linalg.norm(seamLineVecD)
         dot_productd = np.dot(unit_vector_Sd, unit_vector_V)
         angled = np.arccos(dot_productd)*180/np.pi
 
-    if i < (107):
+    if i < (nuSeams-1):
         seamLineVecU = seamPoints[i+1] - seamPoints[i]
         unit_vector_Su = seamLineVecD / np.linalg.norm(seamLineVecU)
         dot_productu = np.dot(unit_vector_Su, unit_vector_V)
@@ -597,7 +690,7 @@ def activeTest(VelVec,seamPoints, i):
     if angleu > 90:
         angleu = angleu - 180
 
-    if abs(angleu) < 35 or abs(angleu) < 35: # or (np.linalg.norm(seamLineVecNU)) > 0.15
+    if abs(angleu) < 40 or abs(angled) < 40: # or (np.linalg.norm(seamLineVecNU)) > 0.15
         return False
     else:
         return True
@@ -610,13 +703,13 @@ def initializeSeam():
     based, in large extant, on the work from
     http://www.darenscotwilson.com/spec/bbseam/bbseam.html
     """
-    n = 108 #number of points were calculating on the seam line
+    n = 109 #number of points were calculating on the seam line
     alpha = np.linspace(0,np.pi*2,n)
     x = np.zeros(len(alpha))
     y = np.zeros(len(alpha))
     z = np.zeros(len(alpha))
     R = (2 + 15/16.)/2
-    for i in range(len(alpha)):
+    for i in range(len(alpha)-1):
 
         x[i] = ((1/13)*R*((9*np.cos(alpha[i]) - 4*np.cos(3*alpha[i]))))
         y[i] = ((1/13)*R*((9*np.sin(alpha[i]) + 4*np.sin(3*alpha[i]))))
@@ -807,4 +900,4 @@ def RK4(t0,y0,dt,BallConsts, activeSeams):
 
     y = y0 + slope*dt
 
-    return y
+    return y, slope
