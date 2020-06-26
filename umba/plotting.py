@@ -2,6 +2,197 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits import mplot3d
 
+def AccelPlots(aX,aY,aZ,TF,j,variable):
+
+    plt.figure(7)
+    plt.xlabel('time (sec)')
+    plt.ylabel('acceleration (ft/s^2)')
+    plt.title('acceleration in x')
+    for i in range(j):
+        t=(np.linspace(0,TF[i],num = len(aX[i])))
+        plt.plot(t, aX[i], label = variable[i])
+        plt.legend()
+        plt.savefig('AX.jpg')
+    plt.show()
+
+    plt.figure(8)
+    plt.xlabel('time (sec)')
+    plt.ylabel('acceleration (ft/s^2)')
+    plt.title('acceleration in y')
+    for i in range(j):
+        t=(np.linspace(0,TF[i],num = len(aY[i])))
+        plt.plot(t, aY[i], label = variable[i])
+        plt.legend()
+        plt.savefig('AY.jpg')
+    plt.show()
+
+    plt.figure(9)
+    plt.xlabel('time (sec)')
+    plt.ylabel('acceleration (ft/s^2)')
+    plt.title('acceleration in z')
+    for i in range(j):
+        t=(np.linspace(0,TF[i],num = len(aZ[i])))
+#        t = np.linspace(0,TF,num = len(aZ[i]))
+        plt.plot(t, aZ[i], label = variable[i])
+        plt.legend()
+        plt.savefig('AZ.jpg')
+    plt.show()
+
+###############################################################################
+
+def AccelPlots2(aX,aY,aZ,TF,j):
+
+    plt.figure(7)
+    plt.xlabel('time (sec)')
+    plt.ylabel('acceleration (ft/s^2)')
+    plt.title('acceleration in x')
+    for i in range(j):
+        t=(np.linspace(0,TF[i],num = len(aX[i])))
+        plt.plot(t[i], aX[i], label = i)
+        plt.legend()
+        plt.savefig('AX.jpg')
+    plt.show()
+
+    plt.figure(8)
+    plt.xlabel('time (sec)')
+    plt.ylabel('acceleration (ft/s^2)')
+    plt.title('acceleration in y')
+    for i in range(j):
+        t=(np.linspace(0,TF[i],num = len(aY[i])))
+        plt.plot(t[i], aY[i], label = i)
+        plt.legend()
+        plt.savefig('AY.jpg')
+    plt.show()
+
+    plt.figure(9)
+    plt.xlabel('time (sec)')
+    plt.ylabel('acceleration (ft/s^2)')
+    plt.title('acceleration in z')
+    for i in range(j):
+        t=(np.linspace(0,TF[i],num = len(aZ[i])))
+        plt.plot(t[i], aZ[i], label = i)
+        plt.legend()
+        plt.savefig('AZ.jpg')
+    plt.show()
+
+###############################################################################
+
+
+def plotSFinalIter(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j,variable):
+    """
+
+    works with UMBANQ.py and plots all the pitches that were tested.
+    the p variables (pX, pY, pZ) are all the position arrays. the I variables
+    indicate the initial positions, the D variables indicate the ball's
+    position at the decision point, and the F variables show the final point of
+    the ball as it crosses the plate. j is the iteration and variable is the
+    variable that changes if multiple pitches are tested.
+
+    """
+
+    plt.figure(4,figsize=(3,10))
+    plt.xlabel('x (in)')
+    plt.ylabel('y (ft)')
+    plt.title('Bird\'s Eye View')
+#    plt.ylim(0,max(pY) + 2.5)
+    for i in range(j):
+        plt.plot(pX[i],pY[i], label = variable[i])
+        plt.legend()
+        plt.scatter(IX[i]*12,IY[i], s=100, c = 'g')
+        plt.scatter(DX[i]*12,DY[i], s=100, c = 'y')
+        plt.scatter(FX[i]*12,FY[i], s=100, c = 'r')
+        plt.savefig("BirdsEye.jpg")
+    plt.show()
+
+    plt.figure(5, figsize=(3,6))
+    plt.xlabel('x (in)')
+    plt.ylabel('z (in)')
+    plt.title('Catcher\'s Perspective')
+#    plt.ylim(0,max(pZ) + 4)
+    plt.axis('equal')
+    for i in range(j):
+        plt.plot(pX[i],pZ[i], label=variable[i])
+        plt.legend()
+        plt.scatter(IX[i]*12,IZ[i]*12, s=100, c = 'g')
+        plt.scatter(DX[i]*12,DZ[i]*12, s=100, c = 'y')
+        plt.scatter(FX[i]*12,FZ[i]*12, s=100, c = 'r')
+        plt.savefig("Catcher.jpg")
+    plt.show()
+
+    plt.figure(6,figsize=(10,3))
+    plt.xlabel('y (ft)')
+    plt.ylabel('z (in)')
+    plt.title('Side View')
+    plt.xlim(0,62.5)
+    plt.ylim(0,89.)
+    for i in range(j):
+        plt.plot(pY[i],pZ[i], label=variable[i])
+        plt.legend()
+        plt.scatter(IY[i],IZ[i]*12, s=100, c = 'g')
+        plt.scatter(DY[i],DZ[i]*12, s=100, c = 'y')
+        plt.scatter(FY[i],FZ[i]*12, s=100, c = 'r')
+        plt.savefig("Side.jpg")
+    plt.show()
+
+###############################################################################
+
+def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
+    """
+
+    works with umba.py and plots all the pitches that were tested.
+    the p variables (pX, pY, pZ) are all the position arrays. the I variables
+    indicate the initial positions, the D variables indicate the ball's
+    position at the decision point, and the F variables show the final point of
+    the ball as it crosses the plate
+
+    """
+
+    plt.figure(4,figsize=(3,10))
+    plt.xlabel('x (in)')
+    plt.ylabel('y (ft)')
+    plt.title('Bird\'s Eye View')
+#    plt.ylim(0,max(pY) + 2.5)
+    for i in range(j):
+        plt.plot(pX[i],pY[i], label = i)
+        plt.legend()
+        plt.scatter(IX[i]*12,IY[i], s=100, c = 'g')
+        plt.scatter(DX[i]*12,DY[i], s=100, c = 'y')
+        plt.scatter(FX[i]*12,FY[i], s=100, c = 'r')
+        plt.savefig("BirdsEye.jpg")
+    plt.show()
+
+    plt.figure(5, figsize=(3,6))
+    plt.xlabel('x (in)')
+    plt.ylabel('z (in)')
+    plt.title('Catcher\'s Perspective')
+#    plt.ylim(0,max(pZ) + 4)
+    plt.axis('equal')
+    for i in range(j):
+        plt.plot(pX[i],pZ[i], label=i)
+        plt.legend()
+        plt.scatter(IX[i]*12,IZ[i]*12, s=100, c = 'g')
+        plt.scatter(DX[i]*12,DZ[i]*12, s=100, c = 'y')
+        plt.scatter(FX[i]*12,FZ[i]*12, s=100, c = 'r')
+        plt.savefig("Catcher.jpg")
+    plt.show()
+
+    plt.figure(6,figsize=(10,3))
+    plt.xlabel('y (ft)')
+    plt.ylabel('z (in)')
+    plt.title('Side View')
+    plt.xlim(0,62.5)
+    plt.ylim(0,89.)
+    for i in range(j):
+        plt.plot(pY[i],pZ[i], label=i)
+        plt.legend()
+        plt.scatter(IY[i],IZ[i]*12, s=100, c = 'g')
+        plt.scatter(DY[i],DZ[i]*12, s=100, c = 'y')
+        plt.scatter(FY[i],FZ[i]*12, s=100, c = 'r')
+        plt.savefig("Side.jpg")
+    plt.show()
+
+###############################################################################
+
 def Plotting(positions):
 
     """
@@ -63,9 +254,12 @@ def Plotting(positions):
 
 def plotSeams(innerPoints,outerPoints,sx,sy,sz,num, VelVec, nodes):
     """
-    plots in 3 dimensions 3 arrays
+
+    plots in 3 dimensions 3 arrays and includes the activates seams, spin axis,
+    velocity vector.
+
     """
-    ims = []
+#    ims = []
     VelVecN = np.linalg.norm(VelVec)
     VelVec = VelVec/VelVecN
     if len(innerPoints) > 0:
@@ -100,9 +294,9 @@ def plotSeams(innerPoints,outerPoints,sx,sy,sz,num, VelVec, nodes):
         fig = plt.figure(num)
         ax = fig.add_subplot(111,projection='3d')
         ax.scatter(xo, yo, zo, color = 'r')
-        ax.scatter(xi, yi, zi, color = 'g')
+        ax.scatter(xi, yi, zi, color = 'g', s = 90)
         ax.scatter(0,0,0, color = 'k', s = 80)
-        ax.scatter(xn,yn,zn, color = 'k', s = 70)
+        ax.scatter(xn,yn,zn, color = 'b', s = 70)
     #    ax.scatter(x[0],y[0],z[0], color = 'b', s = 80, marker = 's')
         ax.plot(xax,yax,zax)
         ax.quiver(0,0,0,VelVec[0],VelVec[1],VelVec[2],color = 'k')
@@ -164,7 +358,7 @@ def plotSeams(innerPoints,outerPoints,sx,sy,sz,num, VelVec, nodes):
 #        ax.scatter(xi, yi, zi, color = 'g')
     #    ax.scatter(x[0],y[0],z[0], color = 'b', s = 80, marker = 's')
         ax.scatter(0,0,0, color = 'k', s = 80)
-        ax.scatter(xn,yn,zn, color = 'k', s = 70)
+        ax.scatter(xn,yn,zn, color = 'b', s = 70)
         ax.plot(xax,yax,zax)
         ax.quiver(0,0,0,VelVec[0],VelVec[1],VelVec[2],color = 'k')
     #    ax.scatter(SpinAxisneg[0], SpinAxisneg[1], SpinAxisneg[2], s = 60, marker = 'v')
@@ -174,6 +368,7 @@ def plotSeams(innerPoints,outerPoints,sx,sy,sz,num, VelVec, nodes):
     #    t = num*.0021
         plt.title('time: %1.3f' %num)
 
+#this next section of code makes the axis all be to the same scale
 
         max_range = 1.3554770667211864
         mid_x = -0.00
@@ -194,6 +389,11 @@ def plotSeams(innerPoints,outerPoints,sx,sy,sz,num, VelVec, nodes):
 ###############################################################################
 
 def plotPointsTest(outerPoints,innerPoints,nodes,num):
+    """
+
+    Can be useful for bug finding and fixing
+
+    """
     fig = plt.figure(num)
     ax = fig.add_subplot(111,projection='3d')
 
@@ -205,99 +405,3 @@ def plotPointsTest(outerPoints,innerPoints,nodes,num):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
     plt.show
-
-###############################################################################
-
-def plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j):
-
-    plt.figure(4,figsize=(3,10))
-    plt.xlabel('x (in)')
-    plt.ylabel('y (ft)')
-    plt.title('Bird\'s Eye View')
-#    plt.ylim(0,max(pY) + 2.5)
-    for i in range(j):
-        plt.plot(pX[i],pY[i], label = i)
-        plt.legend()
-        plt.scatter(IX[i]*12,IY[i], s=100, c = 'g')
-        plt.scatter(DX[i]*12,DY[i], s=100, c = 'y')
-        plt.scatter(FX[i]*12,FY[i], s=100, c = 'r')
-        plt.savefig("BirdsEye.jpg")
-    plt.show()
-
-    plt.figure(5, figsize=(3,6))
-    plt.xlabel('x (in)')
-    plt.ylabel('z (in)')
-    plt.title('Catcher\'s Perspective')
-#    plt.ylim(0,max(pZ) + 4)
-    plt.axis('equal')
-    for i in range(j):
-        plt.plot(pX[i],pZ[i], label=i)
-        plt.legend()
-        plt.scatter(IX[i]*12,IZ[i]*12, s=100, c = 'g')
-        plt.scatter(DX[i]*12,DZ[i]*12, s=100, c = 'y')
-        plt.scatter(FX[i]*12,FZ[i]*12, s=100, c = 'r')
-        plt.savefig("Catcher.jpg")
-    plt.show()
-
-    plt.figure(6,figsize=(10,3))
-    plt.xlabel('y (ft)')
-    plt.ylabel('z (in)')
-    plt.title('Side View')
-    plt.xlim(0,62.5)
-    plt.ylim(0,89.)
-    for i in range(j):
-        plt.plot(pY[i],pZ[i], label=i)
-        plt.legend()
-        plt.scatter(IY[i],IZ[i]*12, s=100, c = 'g')
-        plt.scatter(DY[i],DZ[i]*12, s=100, c = 'y')
-        plt.scatter(FY[i],FZ[i]*12, s=100, c = 'r')
-        plt.savefig("Side.jpg")
-    plt.show()
-
-###############################################################################
-
-def plotSFinalIter(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,j,angle):
-
-    plt.figure(4,figsize=(3,10))
-    plt.xlabel('x (in)')
-    plt.ylabel('y (ft)')
-    plt.title('Bird\'s Eye View')
-#    plt.ylim(0,max(pY) + 2.5)
-    for i in range(j):
-        plt.plot(pX[i],pY[i], label = angle[i])
-        plt.legend()
-        plt.scatter(IX[i]*12,IY[i], s=100, c = 'g')
-        plt.scatter(DX[i]*12,DY[i], s=100, c = 'y')
-        plt.scatter(FX[i]*12,FY[i], s=100, c = 'r')
-        plt.savefig("BirdsEye.jpg")
-    plt.show()
-
-    plt.figure(5, figsize=(3,6))
-    plt.xlabel('x (in)')
-    plt.ylabel('z (in)')
-    plt.title('Catcher\'s Perspective')
-#    plt.ylim(0,max(pZ) + 4)
-    plt.axis('equal')
-    for i in range(j):
-        plt.plot(pX[i],pZ[i], label=angle[i])
-        plt.legend()
-        plt.scatter(IX[i]*12,IZ[i]*12, s=100, c = 'g')
-        plt.scatter(DX[i]*12,DZ[i]*12, s=100, c = 'y')
-        plt.scatter(FX[i]*12,FZ[i]*12, s=100, c = 'r')
-        plt.savefig("Catcher.jpg")
-    plt.show()
-
-    plt.figure(6,figsize=(10,3))
-    plt.xlabel('y (ft)')
-    plt.ylabel('z (in)')
-    plt.title('Side View')
-    plt.xlim(0,62.5)
-    plt.ylim(0,89.)
-    for i in range(j):
-        plt.plot(pY[i],pZ[i], label=angle[i])
-        plt.legend()
-        plt.scatter(IY[i],IZ[i]*12, s=100, c = 'g')
-        plt.scatter(DY[i],DZ[i]*12, s=100, c = 'y')
-        plt.scatter(FY[i],FZ[i]*12, s=100, c = 'r')
-        plt.savefig("Side.jpg")
-    plt.show()
