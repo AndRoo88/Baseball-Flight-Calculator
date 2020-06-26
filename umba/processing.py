@@ -4,7 +4,7 @@ import math
 import plotting
 #import time
 
-def umba(x,y,z,Vtot,Theta, Psi, SpinRate, TiltH, Tiltm, SpinE, Yang, Zang, LorR, i):
+def umba(x,y,z,Vtot,Theta, Psi, SpinRate, TiltH, Tiltm, SpinE, Yang, Zang, LorR, i, seamsOn, FullRot):
     """
 
     The inputs are:
@@ -20,10 +20,10 @@ def umba(x,y,z,Vtot,Theta, Psi, SpinRate, TiltH, Tiltm, SpinE, Yang, Zang, LorR,
         Spin Efficiency,
         Y seam orientation angle,
         Z seam orientation angle,
-        
-        
-        
-        
+
+
+
+
     Primay inputs are: initial position, x0, y0, and z0 with origin at the
     point of home plate, x to the rright of the catcher, y from the catcher
     towards the pitcher, and z straight up. Initial velocities
@@ -42,7 +42,7 @@ def umba(x,y,z,Vtot,Theta, Psi, SpinRate, TiltH, Tiltm, SpinE, Yang, Zang, LorR,
     Yang = (Yang) * np.pi/180
     Zang = -Zang * np.pi/180
 
-    seamsOn = True
+#    seamsOn = True
     frameRate = 0.002
 
 
@@ -61,7 +61,7 @@ def umba(x,y,z,Vtot,Theta, Psi, SpinRate, TiltH, Tiltm, SpinE, Yang, Zang, LorR,
             else:
                 LorR = input('please type in an "l" or an "r" for which pole goes forward')
 
-    positions = (PitchedBallTraj(x, y, z, Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yang, Zang, i, frameRate, seamsOn))
+    positions,NGfinal = (PitchedBallTraj(x, y, z, Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yang, Zang, i, frameRate, seamsOn, FullRot))
     plotting.Plotting(positions)
 
     pX = (positions[0])
@@ -76,11 +76,58 @@ def umba(x,y,z,Vtot,Theta, Psi, SpinRate, TiltH, Tiltm, SpinE, Yang, Zang, LorR,
     FX = (positions[9])
     FY = (positions[10])
     FZ = (positions[11])
+    TF = (positions[12])
+    aX = (positions[13])
+    aY = (positions[14])
+    aZ = (positions[15])
 
-    return(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ)
-    
+    TiltDeg = np.arctan2((NGfinal[0] - x + ((60-y)*np.arctan(Psi*np.pi/180))), (NGfinal[2] - z - (60-z)*np.arctan(Theta*np.pi/180)))*180/np.pi
+    TiltTime = TiltToTime(-TiltDeg)
+    print('Apparent Tilt = ',TiltTime[0],':',TiltTime[1])
+
+    return(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,TF,aX,aY,aZ,TiltTime)
+
 ###############################################################################
-    
+
+def FindAccel(pX,pY,pZ,TF):
+    """
+
+    Find the acceleration given the position and final time of a single pitch
+
+    """
+    TF = TF
+    aX = []
+    aY = []
+    aZ = []
+    t = np.linspace(0,TF,num = len(pX))
+
+    pX = np.array(pX) / 12
+    pZ = np.array(pZ) / 12
+
+    xCoeff = np.polyfit(t,pX,5)
+    xvPoly = np.polyder(xCoeff)
+    xaPoly = np.polyder(xvPoly)
+    xAPoly = np.poly1d(xaPoly)
+
+    yPoly = np.polyfit(t,pY,5)
+    yvPoly = np.polyder(yPoly)
+    yaPoly = np.polyder(yvPoly)
+    yAPoly = np.poly1d(yaPoly)
+
+    zPoly = np.polyfit(t,pZ,5)
+    zvPoly = np.polyder(zPoly)
+    zaPoly = np.polyder(zvPoly)
+    zAPoly = np.poly1d(zaPoly)
+
+    for i in range(len(pX)-1):
+        aX.append(xAPoly(t[i]))
+        aY.append(yAPoly(t[i]))
+        aZ.append(zAPoly(t[i]))
+
+    return(aX,aY,aZ)
+
+###############################################################################
+
 def normalPlane(VelVec,SpinVecT,t):
     """
     finds an acceptable range of seam locations where they can have an affect
@@ -155,7 +202,7 @@ def normalPlane(VelVec,SpinVecT,t):
 
 ###############################################################################
 
-def derivs(t, BallState, BallConsts, activeSeams):
+def derivs(t, BallState, BallConsts, activeSeams, ng):
     """
     This is where the magic happens all models are input here
     Ball State:
@@ -225,7 +272,10 @@ def derivs(t, BallState, BallConsts, activeSeams):
 
     ax = aDragx + aSpinx + aSeamsx
     ay = aDragy + aSpiny + aSeamsy
-    az = aDragz + aSpinz + aSeamsz - 32.2
+    if ng == False:
+        az = aDragz + aSpinz + aSeamsz - 32.2
+    else:
+        az = aDragz + aSpinz + aSeamsz
 
 #    print az
 
@@ -247,7 +297,7 @@ def derivs(t, BallState, BallConsts, activeSeams):
 ###############################################################################
 
 
-def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle,i, frameRate, seamsOn):
+def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle,i, frameRate, seamsOn, FullRot):
 
 
     #this is wehre the work needs to happen now
@@ -284,6 +334,7 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
 
     xSeam, ySeam, zSeam = rotateSeam(xSeam, ySeam, zSeam, RotVec[0],RotVec[1],RotVec[2], 1)
     xSeam0,ySeam0,zSeam0 = xSeam, ySeam, zSeam
+    xSeamNG0,ySeamNG0,zSeamNG0 = xSeam, ySeam, zSeam
 #    xSeam0, ySeam0, zSeam0 = rotateSeam(xSeam, ySeam, zSeam, 0, Yangle, 0, 1)
 #    RotVec = findRotVec(Yangle, Zangle, 0, Spinx0, Spiny0, Spinz0)
 #    xSeam0, ySeam0, zSeam0 = rotateSeam(xSeam2, ySeam2, zSeam2, RotVec[0],RotVec[1],RotVec[2],1)
@@ -334,14 +385,17 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
     BallState0 = [x0,y0,z0,u0,v0,w0,Spinx0,Spiny0,Spinz0]
 
     fileBT = open(str(i) + "BallTrajectoryNEW.txt","w+")
-    fileBT.write("time        x        y         z          u            v       w      Spin x     Spin y    Spin z     ax       ay       az\n")
-    fileBT.write("===============================================================================================================================\n")
+    fileBT.write("time        x        y         z          u            v       w      Spin_x     Spin_y    Spin_z     ax       ay       az\n")
+#    fileBT.write("===============================================================================================================================\n")
     fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
                  .format(t,x0,y0,z0,u0,v0,w0,Spinx0,Spiny0,Spinz0,ax,ay,az))
 
     xP = []
     yP = []
     zP = []
+    xA = []
+    yA = []
+    zA = []
     uP = []
     vP = []
     wP = []
@@ -351,6 +405,8 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
     uD = BallState0[3]
     vD = BallState0[4]
     wD = BallState0[5]
+    
+    BallStateNG0 = BallState0
     while BallState0[1] > 0. and BallState0[2] > 0. and t < 20:
 
         SpinVec = [Spinx0,Spiny0,Spinz0]
@@ -372,22 +428,49 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
 #                activeSeams0, inactiveSeams0, nodes0 = findSSWseams(VelVec,seamPoints0,SpinVec,t)
 #                plotting.plotSeams(activeSeams0, inactiveSeams0, Spinx0, Spiny0, Spinz0, 0, VelVec,nodes)
 #                time.sleep(10)
-            if t % frameRate > -0.0000001 and t % frameRate < 0.0000001 and (SpinRate0*t) < np.pi*2 and t <= .0501:# and SpinRate0 > 100:
-                plotting.plotSeams(activeSeams, inactiveSeams, Spinx0, Spiny0, Spinz0, t, VelVec, nodes)
+            if FullRot == True:
+                if t % frameRate > -0.0000001 and t % frameRate < 0.0000001:# and (SpinRate0*t) < np.pi*2 and t <= .0501:# and SpinRate0 > 100:
+                    plotting.plotSeams(activeSeams, inactiveSeams, Spinx0, Spiny0, Spinz0, t, VelVec, nodes)
+                    
+            else:
+                if t % frameRate > -0.0000001 and t % frameRate < 0.0000001 and (SpinRate0*t) < np.pi*2 and t <= .0501:# and SpinRate0 > 100:
+                    plotting.plotSeams(activeSeams, inactiveSeams, Spinx0, Spiny0, Spinz0, t, VelVec, nodes)
+                
         else:
             activeSeams = [0,0,0]
+            
+            
+
+        SpinVec = [Spinx0,Spiny0,Spinz0]
+        #need to input a non-magnus ball path indicator.
+        if seamsOn == True:
+            xSeamNG1, ySeamNG1, zSeamNG1 = rotateSeam(xSeamNG0, ySeamNG0, zSeamNG0, BallStateNG0[6],BallStateNG0[7],BallStateNG0[8],dt)
+            seamPointsNG = np.asarray([xSeamNG1, ySeamNG1, zSeamNG1])
+
+            VelVecNG = np.asarray([BallStateNG0[3], BallStateNG0[4], BallStateNG0[5]])
+            activeSeamsNG, inactiveSeamsNG, nodesNG = findSSWseams(VelVecNG,seamPointsNG,SpinVec,t)
+#            plotting.plotPointsTest(activeSeams, inactiveSeams, nodes,t)
+
+            xSeamNG0 = xSeamNG1
+            ySeamNG0 = ySeamNG1
+            zSeamNG0 = zSeamNG1
+            
+        else:
+            activeSeamsNG = [0,0,0]
+
+
 #         # This section is for showing the spin behaviour of the ball and where
 #         # the seams are moving
 
 
-        BallState1,slope = RK4(t, BallState0, dt, BallConsts, activeSeams)
-
-#            plotting.plotPointsTest(activeSeams, inactiveSeams, nodes,t)
+        BallState1,slope = RK4(t, BallState0, dt, BallConsts, activeSeams, False)
+        BallStateNG1,slopeNG = RK4(t, BallStateNG0, dt, BallConsts, activeSeamsNG, True)
 
         fileBT.write("{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}{:<10.3f}\n"
                  .format(t,BallState1[0],BallState1[1],BallState1[2],BallState1[3],BallState1[4],BallState1[5],BallState1[6],BallState1[7],BallState1[8], slope[3], slope[4], slope[5]))
 
         BallState0 = BallState1
+        BallStateNG0 = BallStateNG1
 
         xP.append(BallState1[0]*12)
         yP.append(BallState1[1])
@@ -398,7 +481,10 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
         t = t + dt
 
 #    fileBT.close()
-
+        
+    print('NG final position',BallStateNG1[0], BallStateNG1[1], BallStateNG1[2])    
+    NGFinal = BallStateNG1[0], BallStateNG1[1], BallStateNG1[2]
+    
     DecisionPointStep = int(t - (.2/dt))
     if t < decisionPoint:
         print("WOW! no batter has enough skill to hit a ball thrown that fast")
@@ -503,27 +589,26 @@ def PitchedBallTraj(x,y,z,Vtot, Theta, Psi, SpinRate, Tilt, Gyro, Yangle, Zangle
     print('Horizontal break (in)-----------------', to_precision(hBreak*12,4))
     print('Number of Revolutions-----------------', to_precision(totalRotations*t,4))
 
-    fileBART = open("y2traj.txt","w+")
-    fileBART.write("     y         Traj\n")
-    fileBART.write("===================\n")
-#    for i in range(len(xP)):
-#        traj = 180/np.pi*np.arctan2(uP[i],np.sqrt(vP[i]**2 + wP[i]**2))
-##        print(yP[i],traj)
-#        fileBART.write("{:<10.3f}{:<10.3f}\n"
-#                 .format(yP[i], traj))
-    positions = [xP,yP,zP,x0,y0,z0,xD,yD,zD,xF,yF,zF]
+    xA, yA, zA = FindAccel(xP,yP,zP,t)
 
-    return positions
+    positions = [xP,yP,zP,x0,y0,z0,xD,yD,zD,xF,yF,zF,t,xA,yA,zA]
+
+    return positions,NGFinal
 
 ###############################################################################
 
 def TiltToTime(Tilt):
+    """
+    
+    'Tilt' is in degrees and this function outputs the hours and minutes
+    
+    """
 
     TiltTime = (((Tilt)%360)/360)*12
     Hrs = int(TiltTime)
     if Hrs == 0:
         Hrs = 12
-    mins = int(TiltTime*60)%60
+    mins = int(round(TiltTime*60)%60)
     return(Hrs,mins)
 
 ###############################################################################
@@ -870,7 +955,7 @@ def to_precision(x,p):
 
 ###############################################################################
 
-def RK4(t0,y0,dt,BallConsts, activeSeams):
+def RK4(t0,y0,dt,BallConsts, activeSeams, ng):
 
     n = len(y0)
 
@@ -884,17 +969,17 @@ def RK4(t0,y0,dt,BallConsts, activeSeams):
     y = np.zeros(n)
     slope = np.zeros(n)
 
-    k1 = derivs(t0,y0, BallConsts, activeSeams)
+    k1 = derivs(t0,y0, BallConsts, activeSeams,ng)
     ym = y0 + (k1*dt*0.5)
 
-    k2 = derivs(t0+dt*0.5, ym, BallConsts, activeSeams)
+    k2 = derivs(t0+dt*0.5, ym, BallConsts, activeSeams,ng)
     ym = y0 + k2*dt*0.5
 
-    k3 = derivs(t0+dt*0.5,ym, BallConsts, activeSeams)
+    k3 = derivs(t0+dt*0.5,ym, BallConsts, activeSeams,ng)
     ye = y0 + k3*dt
 
 
-    k4 = derivs(t0+dt, ye, BallConsts, activeSeams)
+    k4 = derivs(t0+dt, ye, BallConsts, activeSeams,ng)
 
     slope = (k1 + 2*(k2+k3) + k4)/6.0
 
