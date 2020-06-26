@@ -43,6 +43,10 @@ can be changed for comparison. To retain the current value, just press return")
     FX = []
     FY = []
     FZ = []
+    TF = []
+    aX = []
+    aY = []
+    aZ = []
 
     #x y and z here are typical of an approximately 6' tall rhp
     # these are the defualt initial values and can be changed here or as the code runs
@@ -61,10 +65,11 @@ can be changed for comparison. To retain the current value, just press return")
     SpinE = 100
     Yangle = 0 * np.pi/180
     Zangle = 0 * np.pi/180
+    FullRot = False
     #will run if you are plotting the
 
     print('\n\n\ncurent release distance left to right is', x)
-    Qx = (input('distance left from center of rubber (right haded pitchers should have negative numbers) (ft): '))
+    Qx = (input('distance left from center of rubber (right handed pitchers should have negative numbers) (ft): '))
     if Qx == "":
         x = x
     else:
@@ -242,9 +247,27 @@ can be changed for comparison. To retain the current value, just press return")
                     Zangle = float(QZangle)
                     Zangle = (np.pi/180)*Zangle #converts to radians
                     # consult https://scout.texasleaguers.com/spin for further understanding
+                    
+        if FullRot == True:
+            QFullRot = input('Continue to Show Full Rotation?')
+            if  QFullRot == 'y' or QFullRot == 'yes' or QFullRot == 'Y' or QFullRot == 'YES' or QFullRot == 'Yes' or QFullRot == '':
+                FullRot == True
+            elif QFullRot == 'n' or QFullRot == 'no' or QFullRot == 'N' or QFullRot == 'NO' or QFullRot == 'No':
+                FullRot = False
+        else:
+            QFullRot = input('Continue to Show One Rotation?')
+            if  QFullRot == 'y' or QFullRot == 'yes' or QFullRot == 'Y' or QFullRot == 'YES' or QFullRot == 'Yes' or QFullRot == '':
+                FullRot = False
+            elif QFullRot == 'n' or QFullRot == 'no' or QFullRot == 'N' or QFullRot == 'NO' or QFullRot == 'No':
+                FullRot = True
+                            
 
-        positions = (processing.PitchedBallTraj(x, y, z, Vtot, Theta, Psi, SpinRate, Tiltr, Gyro, Yangle, Zangle, i, frameRate, seamsOn))
+        positions, NGFinal = (processing.PitchedBallTraj(x, y, z, Vtot, Theta, Psi, SpinRate, Tiltr, Gyro, Yangle, Zangle, i, frameRate, seamsOn, FullRot))
         plotting.Plotting(positions)
+
+        TiltDeg = np.arctan2((NGFinal[0] - x + (55*np.arctan(Psi*np.pi/180))), (NGFinal[2] - z - 55*np.arctan(Theta*np.pi/180)))*180/np.pi
+        TiltTime = processing.TiltToTime(-TiltDeg)
+        print('Apparent Tilt = ',TiltTime[0],':',TiltTime[1])
 
         pX.append(positions[0])
         pY.append(positions[1])
@@ -258,6 +281,10 @@ can be changed for comparison. To retain the current value, just press return")
         FX.append(positions[9])
         FY.append(positions[10])
         FZ.append(positions[11])
+        TF.append(positions[12])
+        aX.append(positions[13])
+        aY.append(positions[14])
+        aZ.append(positions[15])
         leave = False
         k = 0
 
@@ -285,6 +312,7 @@ can be changed for comparison. To retain the current value, just press return")
         i = i + 1
 
     plotting.plotSFinal(pX,pY,pZ,IX,IY,IZ,DX,DY,DZ,FX,FY,FZ,i)
+#    plotting.AccelPlots2(aX,aY,aZ,TF,i)
 
 
 
